@@ -1,0 +1,53 @@
+{
+  "Element": {
+    "Node": "rectangle",
+    "Color": "depth",
+    "Link": "hidden",
+    "Thickness": "static",
+    "StaticThickness": 2,
+    "Label": "cityName",
+    "LabelAnchor": "middle",
+    "TextDx": 0,
+    "TextDy": 0,
+    "TextRotation": 0,
+    "TextAnchor": "middle",
+    "Tooltip": ["name", "confirmedCount"]
+  },
+  "CoordinateSystem": {
+    "Category": "cartesian"
+  },
+  "Layout": {
+    "Category": "AxisIndependent",
+    "Mode": "top-down",
+    "X": {
+      "Root": {
+        "Relation": "include",
+        "Padding": [
+          0.02,
+          0.02
+        ]
+      },
+      "Subtree": {
+        "Relation": "align"
+      }
+    },
+    "Y": {
+      "Root": {
+        "Relation": "include",
+        "Padding": [
+          0.02,
+          0.02
+        ]
+      },
+      "Subtree": {
+        "Relation": "flatten",
+        "Margin": 0,
+        "SortingCriteria": "confirmedCount",
+        "SortingOrder": "desc"
+      }
+    },
+    "SubtreeWidth": "adaptive",
+    "SubtreeHeight": "value"
+  },
+  "Name": "slice"
+}

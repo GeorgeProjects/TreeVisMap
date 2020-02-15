@@ -1,0 +1,54 @@
+{
+  "Element": {
+    "Node": "rectangle",
+    "Color": "depth",
+    "Link": "hidden",
+    "Thickness": "static",
+    "StaticThickness": 2,
+    "Label": "cityName",
+    "LabelAnchor": "middle",
+    "TextDx": 0,
+    "TextDy": 0,
+    "TextRotation": 0,
+    "TextAnchor": "middle",
+    "Tooltip": ["name", "confirmedCount"]
+  },
+  "CoordinateSystem": {
+    "Category": "cartesian"
+  },
+  "Layout": {
+    "Category": "AxisIndependent",
+    "Mode": "top-down",
+    "X": {
+      "Root": {
+        "Relation": "include",
+        "Padding": [
+          0.01,
+          0.01
+        ]
+      },
+      "Subtree": {
+        "Relation": "flatten",
+        "Margin": 0,
+        "SortingCriteria": "confirmedCount",
+        "SortingOrder": "desc",
+        "MarginType": "space-between"
+      }
+    },
+    "Y": {
+      "Root": {
+        "Relation": "include",
+        "Padding": [
+          0.01,
+          0.01
+        ]
+      },
+      "Subtree": {
+        "Relation": "align"
+      }
+    },
+    "SubtreeWidth": "value",
+    "SubtreeHeight": "adaptive"
+  },
+  "Name": "dice"
+}

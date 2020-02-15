@@ -1,0 +1,10 @@
+const template = require('express').Router();
+const all = require('./all');
+const query = require('./query');
+const add = require('./add');
+const remove = require('./remove');
+template.get('/', all);
+template.get('/query', query);
+template.get('/add', add);
+template.get('/remove', remove);
+module.exports = template;
