@@ -51,5 +51,8 @@ module.exports = {
       		preProcessor: 'less',
       		patterns: [path.resolve(__dirname, "src/assets/less/global.less")]
    	 	}
-	}
+	},
+	chainWebpack: config => {
+        config.module.rules.delete('eslint');
+    }
 }
