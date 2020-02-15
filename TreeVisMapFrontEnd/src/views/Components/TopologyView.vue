@@ -28,8 +28,7 @@
 			  		<span class="icon iconfont icon-setting"></span>
 			  	</span>
 			  </el-col>
-			  <div class = "detail-component-panel el-col el-col-offset-1 el-col-22" v-if="name === selectedRelationName">
-			  </div>
+			  <div class = "detail-component-panel el-col el-col-offset-1 el-col-22" v-if="name === selectedRelationName"></div>
 			</el-row>
 			<el-row class="row-container" :gutter="20">
 				<span class = "sub-title">
@@ -55,9 +54,8 @@
 			  		<span class="icon iconfont icon-setting"></span>
 			  	</span>
 			  </el-col>
+			  <div class = "detail-component-panel el-col el-col-offset-1 el-col-22" v-if="name === selectedRelationName"></div>
 			</el-row>
-			<div class = "detail-component-panel el-col el-col-offset-1 el-col-22" v-if="name === selectedRelationName">
-			</div>
 		</div>
 	</div>
 </template>
