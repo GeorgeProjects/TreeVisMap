@@ -170,10 +170,12 @@ export default {
         self.loading = false
         self.loadingData = false
         self.loadingView = false
+        const length = maxDslAmountIndex - self.dslNameIndex;
         while (self.dslNameIndex < maxDslAmountIndex) {
           const i = await self.setTreeDSLContent_Render_Download(self.dslNameIndex);
           self.dslNameIndex = self.dslNameIndex + 1
         }
+        console.log(self.computeNodeDistance(length));
         console.log('this will print last');
       })
     //  加载TreeUnit的数据
@@ -228,7 +230,8 @@ export default {
       'treeDslOption', 
       'previewTreeObj',
       'selectedDataset',
-      'focusedTreeObjArray'
+      'focusedTreeObjArray',
+      'positionArray',
     ])
   },
   methods: {
@@ -258,7 +261,7 @@ export default {
           layoutParas.treeDSLContentObj = this.getTreeDSLContentObj(treeIndexWithDSL)
           // setTimeout(function() {
             this.UPDATE_TREE_CANVAS_LAYOUT_STATE()
-            this.computeAreaDataObj()
+            this.computeAreaDataObj(this)
             res(dslNameIndex)
             // setTimeout(function() {
             //   self.save_as_png()
@@ -268,13 +271,13 @@ export default {
      });
     },
     //  计算树可视化的对象所占据的区域
-    computeAreaDataObj: function() {
+    computeAreaDataObj: function(self) {
       let layoutParas = sysDatasetObj.getLayoutParas()
       let nodeArray = sysDatasetObj.getNodeArray()
       let assignedAllNodesBoolean = assignedAllNodes(nodeArray, layoutParas.treeIndexWithDSL)
       if (assignedAllNodesBoolean) {
         getLayoutValue(layoutParas).then(function(treeLayout) {
-          renderTreeVisResults(treeLayout)
+          self.positionArray.push(renderTreeVisResults(treeLayout))
         })
       }
       //  计算树可视化结果中的节点位置的布局
@@ -290,6 +293,7 @@ export default {
         let dslContentObjectWithDefault = addDefaultCoordElement(dslContentObject)
         let [areaDataArray, linkDataArray] = getNodeLinkAttr(areaData, dslContentObjectWithDefault, treeIndexWithDSL, treeViewPosLenObj, nodeArray)
         console.log('areaDataArray', areaDataArray)
+        return areaDataArray
       }
       //  是否在DSL中指定了全部节点
       function assignedAllNodes(nodeArray, treeIndexWithDSL) {
@@ -306,6 +310,37 @@ export default {
           return true
         }
         return false
+      }
+    },
+    computeNodeDistance: function(length) {
+      let distanceArray = []
+      console.log(length)
+      for (let i = 0; i < length; i++) {
+        let temp = []
+        for (let j = 0; j < length; j++) {
+          if (j < i) temp.push(distanceArray[j][i])
+          if (j == i) temp.push(0)
+          if (j > i) {
+            temp.push(distance(this.positionArray[i], this.positionArray[j]))
+          }
+        }
+        distanceArray.push(temp)
+      }
+      return distanceArray
+      function distance(a, b) {
+        let len = a.length
+        let ans = 0
+        // let pow = Array(len)
+        // for (let i = 0; i < len;i++) {
+        //   if (a[i].fatherID == null) pow[i] = 1
+        //   else {
+        //     pow[i] = pow[parseFloat(a[i].fatherID.splice('-')[1])] + 1
+        //   }
+        // }
+        for (let i = 0; i < len;i++) {
+          ans += Math.sqrt(Math.pow((a[i].x - b[i].x),2) + Math.pow((a[i].y - b[i].y),2))
+        }
+        return ans
       }
     },
     handleClickDataIcon: function() {

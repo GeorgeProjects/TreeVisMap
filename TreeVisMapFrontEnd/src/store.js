@@ -78,7 +78,10 @@ export default new Vuex.Store({
     linkComponent: null,
     coordComponent: null,
     hoverParam: '',
-    hoverParamAxis: ''
+    hoverParamAxis: '',
+    //=========================
+    //  记录一组树的节点位置，便于计算距离
+    positionArray: [],
   },
   mutations: {
     ['UPDATE_USER_INFO_OBJ'] (state, userInfoObj) {
