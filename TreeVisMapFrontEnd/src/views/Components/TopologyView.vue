@@ -9,85 +9,131 @@
 					Parend-child relation
 				</span>
 			</el-row>
-			<el-row class="row-container" :gutter="20" v-for="(attrObj, name) in parentChildRelationObject">
-			  <el-col :offset="1" :span="1" class="row-bg col-container">
-			  </el-col>
-			  <el-col :span="3" class="row-bg col-container">
-			  	<span class = "inner-label">
-			  		<span class="icon iconfont" :class="getIconClass(name)"></span>
-			  	</span>
-			  </el-col>
-			  <el-col :span="15" class="row-bg col-container">
-			  	<span class = "inner-label">
-			  		{{name}}
-			  	</span>
-			  </el-col>
-			  <el-col :span="3" class="row-bg col-container filter-container">
-			  	<span class="inner-label" :class="{active: name === selectedRelationName}"
-			  			@click="changeActiveRelation(name)">
-			  		<span class="icon iconfont icon-setting"></span>
-			  	</span>
-			  </el-col>
-			  <div class = "detail-component-panel el-col el-col-offset-1 el-col-22" v-if="name === selectedRelationName">
-			  </div>
-			</el-row>
+			<drag class="drag" 
+				drop-effect="copy" 
+				:effect-allowed="['copy']"
+				@dragstart="dragStartHandler('parent-child-relation')"
+				@dragend="dragEndHandler"
+				v-for="name in parentChildRelationArray" 
+				:transfer-data="{ 'value': name, 'type': 'parent-child-relation' }">
+				<el-row class="row-container" :gutter="20">
+				  <el-col :offset="1" :span="1" class="row-bg col-container">
+				  </el-col>
+				  <el-col :span="6" class="row-bg col-container">
+				  	<span class = "inner-label">
+				  		<span class="icon iconfont" :class="getIconClassX(name)"></span>
+				  	</span>
+				  	<!-- <el-divider direction="vertical"></el-divider> -->
+				  	<span class = "inner-label">
+				  		<span class="icon iconfont" :class="getIconClassY(name)"></span>
+				  	</span>
+				  </el-col>
+				  <el-col :span="12" class="row-bg col-container">
+				  	<span class = "inner-label">
+				  		{{name}}
+				  	</span>
+				  </el-col>
+				  <el-col :span="3" class="row-bg col-container filter-container">
+				  	<span class="inner-label" :class="{active: name === selectedRelationName}"
+				  			@click="changeActiveRelation(name)">
+				  		<span class="icon iconfont icon-setting"></span>
+				  	</span>
+				  </el-col>
+				  <div class = "detail-component-panel el-col el-col-offset-1 el-col-22" v-if="name === selectedRelationName">
+				  	<IncludePara v-if="name==='include'" :axisDsl="includeObj"></IncludePara>
+				  	<JuxtaposePara v-if="name==='juxtapose'" :axisDsl="juxtaposeObj"></JuxtaposePara>
+				  	<WithinPara v-if="name==='within'" :axisDsl="withinObj"></WithinPara>
+				  </div>
+				</el-row>
+			</drag>
 			<el-row class="row-container" :gutter="20">
 				<span class = "sub-title">
 					Sibling relation
 				</span>
 			</el-row>
-			<el-row class="row-container" :gutter="20" v-for="(attrObj, name) in siblingRelationObject">
-			  <el-col :offset="1" :span="1" class="row-bg col-container">
-			  </el-col>
-			  <el-col :span="3" class="row-bg col-container">
-			  	<span class = "inner-label">
-			  		<span class="icon iconfont" :class="getIconClass(name)"></span>
-			  	</span>
-			  </el-col>
-			  <el-col :span="15" class="row-bg col-container">
-			  	<span class = "inner-label">
-			  		{{name}}
-			  	</span>
-			  </el-col>
-			  <el-col :span="3" class="row-bg col-container filter-container">
-			  	<span class="inner-label" :class="{active: name === selectedRelationName}"
-			  			@click="changeActiveRelation(name)">
-			  		<span class="icon iconfont icon-setting"></span>
-			  	</span>
-			  </el-col>
-			  <div class = "detail-component-panel el-col el-col-offset-1 el-col-22" v-if="name === selectedRelationName"></div>
-			</el-row>
+			<drag class="drag"
+				drop-effect="copy" 
+				:effect-allowed="['copy']"
+				@dragstart="dragStartHandler('sibling-relation')"
+				@dragend="dragEndHandler"
+				v-for="name in siblingRelationArray" 
+				:transfer-data="{ 'value': name, 'type': 'sibling-relation' }">
+				<el-row class="row-container" :gutter="20">
+				  <el-col :offset="1" :span="1" class="row-bg col-container">
+				  </el-col>
+				  <el-col :span="6" class="row-bg col-container">
+				  	<span class = "inner-label">
+				  		<span class="icon iconfont" :class="getIconClassX(name)"></span>
+				  	</span>
+				  	<!-- <el-divider direction="vertical"></el-divider> -->
+				  	<span class = "inner-label">
+				  		<span class="icon iconfont" :class="getIconClassY(name)"></span>
+				  	</span>
+				  </el-col>
+				  <el-col :span="12" class="row-bg col-container">
+				  	<span class = "inner-label">
+				  		{{name}}
+				  	</span>
+				  </el-col>
+				  <el-col :span="3" class="row-bg col-container filter-container">
+				  	<span class="inner-label" :class="{active: name === selectedRelationName}"
+				  			@click="changeActiveRelation(name)">
+				  		<span class="icon iconfont icon-setting"></span>
+				  	</span>
+				  </el-col>
+				  <div class = "detail-component-panel el-col el-col-offset-1 el-col-22" v-if="name === selectedRelationName">
+				  	<AlignPara v-if="name==='align'" :axisDsl="alignObj"></AlignPara>
+				  	<FlattenPara v-if="name==='flatten'" :axisDsl="flattenObj"></FlattenPara>
+				  </div>
+				</el-row>
+			</drag>
 		</div>
 	</div>
 </template>
 <script>
+	import IncludePara from './layout/IncludePara.vue'
+	import JuxtaposePara from './layout/JuxtaposePara.vue'
+	import WithinPara from './layout/WithinPara.vue'
+	import AlignPara from './layout/AlignPara.vue'
+	import FlattenPara from './layout/FlattenPara.vue'
+	import { Drag, Drop } from 'vue-drag-drop'
+	import { mapState, mapMutations, mapActions } from 'vuex'
+
 	export default {
 		name: 'DataView',
 		components: {
-			
+			IncludePara, JuxtaposePara, WithinPara, AlignPara, FlattenPara,
+			Drag, Drop
 		},
 		data() {
 			return {
 				selectedRelationName: null, 
-				parentChildRelationObject: {
-					within: {
+				withinObj: {},
+				juxtaposeObj: {},
+				includeObj: {},
+				alignObj: {},
+				flattenObj: {},
+				// parentChildRelationObject: {
+				// 	within: {
 
-					},
-					juxtapose: {
+				// 	},
+				// 	juxtapose: {
 
-					},
-					include: {
+				// 	},
+				// 	include: {
 
-					}
-				},
-				siblingRelationObject: {
-					align: {
+				// 	}
+				// },
+				// siblingRelationObject: {
+				// 	align: {
 
-					},
-					flatten: {
+				// 	},
+				// 	flatten: {
 
-					}
-				}		
+				// 	}
+				// },
+				parentChildRelationArray: ['within', 'juxtapose', 'include'],
+				siblingRelationArray: ['align', 'flatten']
 			}
 		},
 		watch: {
@@ -102,7 +148,9 @@
 
 		},
 		computed: {
-
+			...mapState([
+		      'currentDragComponent'
+		    ])
 		},
 		methods: {
 			changeActiveRelation: function(relationName) {
@@ -112,9 +160,22 @@
 					this.selectedRelationName = null
 				}
 			},
-			getIconClass: function(iconName) {
-				return 'icon-' + iconName
-			}
+			getIconClassX: function(iconName) {
+				return 'icon-' + iconName + '-x'
+			},
+			getIconClassY: function(iconName) {
+				return 'icon-' + iconName + '-y'
+			},
+			dragStartHandler: function(type) {
+				this.UPDATE_CURRENT_DARG_COMPONENT(type)
+			},
+			dragEndHandler: function() {
+				let componentType = null
+				this.UPDATE_CURRENT_DARG_COMPONENT(componentType)
+			},
+			...mapMutations([
+		      'UPDATE_CURRENT_DARG_COMPONENT'
+		    ])
 		}
 	}
 </script>
