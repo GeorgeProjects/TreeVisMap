@@ -41,6 +41,7 @@ export default new Vuex.Store({
     currentTreeDSLArray: [],
     userInfoName: 'Login',
     userInfoObj: null,
+    currentDragComponent: null,
     //=========================
     hierarchicalData: null,
     originalHierarchicalDataObj: null,
@@ -84,6 +85,9 @@ export default new Vuex.Store({
     positionArray: [],
   },
   mutations: {
+    ['UPDATE_CURRENT_DARG_COMPONENT'] (state, currentDragComponent) {
+      state.currentDragComponent = currentDragComponent
+    },
     ['UPDATE_USER_INFO_OBJ'] (state, userInfoObj) {
       state.userInfoObj = userInfoObj
     },

@@ -4,36 +4,44 @@
 			<span class = "inner-title">Data Attributes</span>
 		</div>
 		<div class = "component-container">
-			<el-row class="row-container" :gutter="20" v-if="selectedDataset!=null" v-for="attrObj in attrObjArray">
-			  <el-col :offset="1" :span="1" class="row-bg col-container">
-			  </el-col>
-			  <el-col :span="3" class="row-bg col-container">
-			  	<span class = "inner-label">
-			  		<span v-if="(attrObj.attrType === 'string') || (attrObj.attrType === 'boolean')" class="icon iconfont icon-xingzhuang"></span>
-			  		<span v-if="attrObj.attrType === 'number'" class="icon iconfont icon-chizi_o"></span>
-			  	</span>
-			  </el-col>
-			  <el-col :span="15" class="row-bg col-container">
-			  	<span class = "inner-label">
-			  		{{attrObj.attrName}}
-			  	</span>
-			  </el-col>
-			  <el-col :span="3" class="row-bg col-container filter-container">
-			  	<span class="inner-label" :class="{active: attrObj.attrName === selectedAttrName}"
-			  			@click="changeActiveAttr(attrObj.attrName)">
-			  		<span class="icon iconfont icon-shaixuan"></span>
-			  	</span>
-			  </el-col>
-			</el-row>
+			<drag class="drag" v-if="selectedDataset!=null" 
+				@dragstart="dragStartHandler('attribute')"
+				@dragend="dragEndHandler"
+				v-for="attrObj in attrObjArray"
+				:transfer-data="{ 'value': attrObj.attrName, 'type': 'attribute' }">
+				<el-row class="row-container" :gutter="20" >
+				  <el-col :offset="1" :span="1" class="row-bg col-container">
+				  </el-col>
+				  <el-col :span="3" class="row-bg col-container">
+				  	<span class = "inner-label">
+				  		<span v-if="(attrObj.attrType === 'string') || (attrObj.attrType === 'boolean')" class="icon iconfont icon-xingzhuang"></span>
+				  		<span v-if="attrObj.attrType === 'number'" class="icon iconfont icon-chizi_o"></span>
+				  	</span>
+				  </el-col>
+				  <el-col :span="15" class="row-bg col-container">
+				  	<span class = "inner-label">
+				  		{{attrObj.attrName}}
+				  	</span>
+				  </el-col>
+				  <el-col :span="3" class="row-bg col-container filter-container">
+				  	<span class="inner-label" :class="{active: attrObj.attrName === selectedAttrName}"
+				  			@click="changeActiveAttr(attrObj.attrName)">
+				  		<span class="icon iconfont icon-shaixuan"></span>
+				  	</span>
+				  </el-col>
+				</el-row>
+			</drag>
 		</div>
 	</div>
 </template>
 <script>
 	import { mapState, mapMutations, mapActions } from 'vuex'
+	import { Drag, Drop } from 'vue-drag-drop'
+
 	export default {
 		name: 'DataView',
 		components: {
-			
+			Drag, Drop
 		},
 		data() {
 			return {
@@ -58,7 +66,8 @@
 		computed: {
 		    ...mapState([
 		      'selectedDataset',
-		      'attrObjArray'
+		      'attrObjArray',
+		      'currentDragComponent'
 		    ])
 		},
 		methods: {
@@ -68,7 +77,17 @@
 				} else {
 					this.selectedAttrName = attrName
 				}
-			}
+			},
+			dragStartHandler: function(type) {
+				this.UPDATE_CURRENT_DARG_COMPONENT(type)
+			},
+			dragEndHandler: function() {
+				let componentType = null
+				this.UPDATE_CURRENT_DARG_COMPONENT(componentType)
+			},
+			...mapMutations([
+		      'UPDATE_CURRENT_DARG_COMPONENT'
+		    ])
 		}
 	}
 </script>

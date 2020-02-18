@@ -6,39 +6,74 @@
   "description": "",
   "glyphs": [
     {
-      "icon_id": "13032869",
-      "name": "within",
-      "font_class": "within",
-      "unicode": "e67e",
-      "unicode_decimal": 59006
+      "icon_id": "13078264",
+      "name": "flatten-x",
+      "font_class": "flatten-x",
+      "unicode": "e692",
+      "unicode_decimal": 59026
     },
     {
-      "icon_id": "13034102",
-      "name": "juxtapose",
-      "font_class": "juxtapose",
-      "unicode": "e67f",
-      "unicode_decimal": 59007
+      "icon_id": "13077922",
+      "name": "align-y",
+      "font_class": "align-y",
+      "unicode": "e688",
+      "unicode_decimal": 59016
     },
     {
-      "icon_id": "13034390",
-      "name": "flatten",
-      "font_class": "flatten",
-      "unicode": "e681",
-      "unicode_decimal": 59009
+      "icon_id": "13077923",
+      "name": "include-y",
+      "font_class": "include-y",
+      "unicode": "e689",
+      "unicode_decimal": 59017
     },
     {
-      "icon_id": "13034391",
-      "name": "align",
-      "font_class": "align",
-      "unicode": "e682",
-      "unicode_decimal": 59010
+      "icon_id": "13077925",
+      "name": "flatten-y",
+      "font_class": "flatten-y",
+      "unicode": "e68b",
+      "unicode_decimal": 59019
     },
     {
-      "icon_id": "13034393",
-      "name": "include",
-      "font_class": "include",
-      "unicode": "e683",
-      "unicode_decimal": 59011
+      "icon_id": "13077926",
+      "name": "within-x",
+      "font_class": "within-x",
+      "unicode": "e68c",
+      "unicode_decimal": 59020
+    },
+    {
+      "icon_id": "13077927",
+      "name": "include-x",
+      "font_class": "include-x",
+      "unicode": "e68d",
+      "unicode_decimal": 59021
+    },
+    {
+      "icon_id": "13077928",
+      "name": "juxtapose-y",
+      "font_class": "juxtapose-y",
+      "unicode": "e68e",
+      "unicode_decimal": 59022
+    },
+    {
+      "icon_id": "13077929",
+      "name": "juxtapose-x",
+      "font_class": "juxtapose-x",
+      "unicode": "e68f",
+      "unicode_decimal": 59023
+    },
+    {
+      "icon_id": "13077930",
+      "name": "within-y",
+      "font_class": "within-y",
+      "unicode": "e690",
+      "unicode_decimal": 59024
+    },
+    {
+      "icon_id": "13077943",
+      "name": "align-x",
+      "font_class": "align-x",
+      "unicode": "e691",
+      "unicode_decimal": 59025
     },
     {
       "icon_id": "3092301",
