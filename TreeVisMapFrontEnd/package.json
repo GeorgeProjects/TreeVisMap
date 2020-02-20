@@ -33,6 +33,7 @@
     "squarify": "^1.1.0",
     "svg-path-parser": "^1.1.0",
     "svg-tween": "^3.0.1",
+    "tsne-js": "^1.0.3",
     "vue": "^2.5.21",
     "vue-axios": "^2.1.4",
     "vue-cookies": "^1.6.1",

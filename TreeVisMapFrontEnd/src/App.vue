@@ -63,7 +63,7 @@
                     @closeDataView="closeDataView"/>
                 </div> --> 
                 <div id = "treecanvas-content-view">
-                  <TreeCanvas :treeCanvasKey="treeCanvasKey"/>
+                  <TreeVisMap :maxDslAmountIndex="maxDslAmountIndex" />
                 </div>
               </div>
             </div>
@@ -94,6 +94,7 @@
 
 <script>
 import TreeCanvas from './views/TreeCanvasView/TreeCanvas.vue'
+import TreeVisMap from './views/TreeVisMapView/TreeVisMap.vue'
 import TreeCanvasViewTitle from './views/TreeCanvasView/TreeCanvasViewTitle.vue'
 import OriginalDataView from './views/TreeCanvasView/OriginalDataView.vue'
 import DataView from './views/Components/DataView.vue'
@@ -108,6 +109,9 @@ import { getHierarchicalDSL } from '@/data-processing/get_hierarchical_dsl.js'
 import { getTreeDataInfo } from '@/data-processing/get_tree_data_info.js'
 import { getTreeTemplate } from '@/data-processing/get_tree_template.js'
 import { getLayoutValue } from '@/data-processing/get_layout_value.js'
+import { getTreeLayout } from '@/data-processing/get_tree_layout.js'
+import { addDefaultCoordElement } from '@/data-processing/add_default_coord_element.js'
+import { getNodeLinkAttr } from '@/data-processing/get_node_link_attr.js'
 import { getConfig } from '@/config/config.js'
 import { Dataset } from '@/Dataset/dataset.js'
 import { mapState, mapMutations, mapActions } from 'vuex'
@@ -122,7 +126,7 @@ export default {
     TreeCanvas, TreeCanvasViewTitle, OriginalDataView,
     //  提供三个不同功能的对话框的组件
     DataDialog, ExportDialog, TreedslDialog,
-    DataView, TopologyView, QueryView
+    DataView, TopologyView, QueryView, TreeVisMap
   },
   data() {
     return {
@@ -146,7 +150,7 @@ export default {
       dataDialogKey: 0,
       treedslDialogUpdate: 1,
       dslNameIndex: 0,
-      maxDslAmountIndex: 2
+      maxDslAmountIndex: 200
     }
   },
   created: function() {
@@ -257,7 +261,7 @@ export default {
           layoutParas.treeIndexWithDSL = treeIndexWithDSL
           layoutParas.treeDSLContentObj = this.getTreeDSLContentObj(treeIndexWithDSL)
           // setTimeout(function() {
-            this.UPDATE_TREE_CANVAS_LAYOUT_STATE()
+            // this.UPDATE_TREE_CANVAS_LAYOUT_STATE()
             this.computeAreaDataObj(this)
             res(dslNameIndex)
             // setTimeout(function() {
@@ -289,7 +293,6 @@ export default {
         let areaData = getTreeLayout(treeIndexWithDSL, dslContentObject, treelayout, nodeArray, treeViewPosLenObj)
         let dslContentObjectWithDefault = addDefaultCoordElement(dslContentObject)
         let [areaDataArray, linkDataArray] = getNodeLinkAttr(areaData, dslContentObjectWithDefault, treeIndexWithDSL, treeViewPosLenObj, nodeArray)
-        console.log('areaDataArray', areaDataArray)
         return areaDataArray
       }
       //  是否在DSL中指定了全部节点
