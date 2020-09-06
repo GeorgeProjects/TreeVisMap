@@ -73,7 +73,6 @@
     <!--data dialog-->
     <el-dialog title="Dataset" id="dataset-dialog" :visible.sync="dataDialogVisible">
       <DataDialog
-        :initTreeDataName="initTreeDataName"
         :dataDialogKey="dataDialogKey"
         @updateSelectedTreeDateName="updateSelectedTreeDateName"
         @closeDataDialog="closeDataDialog">

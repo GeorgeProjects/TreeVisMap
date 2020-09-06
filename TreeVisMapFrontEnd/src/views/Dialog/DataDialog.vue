@@ -151,7 +151,7 @@
 	        }
 	        if (!notExisted) {
 	          this.$message.error('The file name is existed!');	  
-	          return      	
+	          return 
 	        }
 	        var reader = new FileReader();
 		    reader.readAsText(file, 'utf-8');
