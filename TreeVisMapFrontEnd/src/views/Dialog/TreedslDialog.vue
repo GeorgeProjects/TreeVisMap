@@ -14,10 +14,7 @@
 					   		:add2DSLList="selectTreeDSL"
 					 		:defaultOperationFunc="selectTreeDSL">
 					   	</SinglePreviewFigure>
-					</div>	
-					<!-- <div class="name">
-						{{exampleObj.Name}}
-					</div> -->	
+					</div>
 				</div>
 			</div>
 			<div class = "inner-title">Your Templates</div>

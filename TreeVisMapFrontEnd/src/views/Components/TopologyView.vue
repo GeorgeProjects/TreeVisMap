@@ -113,25 +113,6 @@
 				includeObj: {},
 				alignObj: {},
 				flattenObj: {},
-				// parentChildRelationObject: {
-				// 	within: {
-
-				// 	},
-				// 	juxtapose: {
-
-				// 	},
-				// 	include: {
-
-				// 	}
-				// },
-				// siblingRelationObject: {
-				// 	align: {
-
-				// 	},
-				// 	flatten: {
-
-				// 	}
-				// },
 				parentChildRelationArray: ['within', 'juxtapose', 'include'],
 				siblingRelationArray: ['align', 'flatten']
 			}

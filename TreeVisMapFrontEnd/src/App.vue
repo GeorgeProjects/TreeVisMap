@@ -52,16 +52,11 @@
           <div class = "right-panel">
             <div class = "bottom-panel">
               <div id = "tree-canvas-view-title">
-                <TreeCanvasViewTitle
-                  :title="treeCanvasParasTitle">
-                </TreeCanvasViewTitle>
+                <TreeVisMapTitle
+                  :title="treeVisMapViewTitle">
+                </TreeVisMapTitle>
               </div>
               <div id = "tree-canvas-view-body">  
-                <!-- <div id="original-data-view">
-                  <OriginalDataView 
-                    @openDataView="openDataView"
-                    @closeDataView="closeDataView"/>
-                </div> --> 
                 <div id = "treecanvas-content-view">
                   <TreeVisMap :maxDslAmountIndex="maxDslAmountIndex" />
                 </div>
@@ -92,10 +87,9 @@
 </template>
 
 <script>
-import TreeCanvas from './views/TreeCanvasView/TreeCanvas.vue'
+  
 import TreeVisMap from './views/TreeVisMapView/TreeVisMap.vue'
-import TreeCanvasViewTitle from './views/TreeCanvasView/TreeCanvasViewTitle.vue'
-import OriginalDataView from './views/TreeCanvasView/OriginalDataView.vue'
+import TreeVisMapTitle from './views/TreeVisMapView/TreeVisMapTitle.vue'
 import DataView from './views/Components/DataView.vue'
 import TopologyView from './views/Components/TopologyView.vue'
 import QueryView from './views/Components/QueryView.vue'
@@ -103,7 +97,6 @@ import DataDialog from './views/Dialog/DataDialog.vue'
 import ExportDialog from './views/Dialog/ExportDialog.vue'
 import TreedslDialog from './views/Dialog/TreedslDialog.vue'
 import { getHierarchicalData } from '@/data-processing/get_hierarchical_data.js'
-import { getLatestNCovData } from '@/data-processing/get_latest_ncov_data.js'
 import { getHierarchicalDSL } from '@/data-processing/get_hierarchical_dsl.js'
 import { getTreeDataInfo } from '@/data-processing/get_tree_data_info.js'
 import { getTreeTemplate } from '@/data-processing/get_tree_template.js'
@@ -121,21 +114,18 @@ import saveSvgAsPng from 'save-svg-as-png'
 export default {
   name: 'app',
   components: {
-    //  视图组件
-    TreeCanvas, TreeCanvasViewTitle, OriginalDataView,
-    //  提供三个不同功能的对话框的组件
     DataDialog, ExportDialog, TreedslDialog,
-    DataView, TopologyView, QueryView, TreeVisMap
+    DataView, TopologyView, QueryView, 
+    TreeVisMap, TreeVisMapTitle
   },
   data() {
     return {
       appName: 'NaviTreeTor',
-      treeCanvasParasTitle: 'Overview',
+      treeVisMapViewTitle: 'Overview',
       initTreeDataName: null,
       treeTemplateObj: null,
       activeIndex: null,
       componentKey: 0,
-      //  控制不同对话窗口的变量
       dataDialogVisible: false,
       treedslDialogVisible: false,
       exportDialogVisible: false,
@@ -143,8 +133,6 @@ export default {
       loadingData: true,
       loadingView: true,
       OPEN_PREVIEW_PANEL_DURATION: 1000,
-      treeCanvasKey: 0,
-      systemUserName: 'root',
       userInfoDialogKey: 0,
       dataDialogKey: 0,
       treedslDialogUpdate: 1,
@@ -160,9 +148,8 @@ export default {
     let maxDslAmountIndex = this.maxDslAmountIndex
     window.sysDatasetObj = new Dataset()
     let treeUnitDataDeferObj = $.Deferred(), treeDataDeferObj = $.Deferred(),
-      treeDSLDeferObj = $.Deferred(), 
+      treeDSLDeferObj = $.Deferred()
       // templateDeferObj = $.Deferred(),
-      ncovAreaDisDeferObj = $.Deferred(), ncovAreaDeferObj = $.Deferred()
     // self.loading = false
     // self.loadingData = false
     // self.loadingView = false
@@ -172,11 +159,34 @@ export default {
         self.loadingView = false
         const length = maxDslAmountIndex - self.dslNameIndex;
         while (self.dslNameIndex < maxDslAmountIndex) {
-          const i = await self.setTreeDSLContent_Render_Download(self.dslNameIndex);
+          let result = await self.setTreeDSLContent_Render_Download(self.dslNameIndex);
+          console.log('result', result)
+          // result.then((i) => {
+          //   console.log('i', i)
+          // })
           self.dslNameIndex = self.dslNameIndex + 1
         }
         console.log(self.computeNodeDistance(length));
         console.log('this will print last');
+
+        let p1 = new Promise((res, rej) => {
+            // setTimeout(() => {
+            console.log('p1')
+            // }, 1000);
+            res('p11')
+         })
+        p1.then((d) => {
+          console.log(d)
+        })
+        let p2 = new Promise((res, rej) => {
+            // setTimeout(() => {
+            console.log('p2')
+            // }, 1000);
+            res('p22')
+         });
+        p2.then((d) => {
+          console.log(d)
+        })
       })
     //  加载TreeUnit的数据
     let treeUnitDateset = 'treeunit.json'
@@ -238,11 +248,11 @@ export default {
     iconClass(operation) {
       return 'icon-' + operation
     },
-    onShow() {
-    },
+    onShow() {},
     updateCurrentTreeDSLIndex: function(exampleName) {
       this.dslNameIndex = exampleName
       this.setTreeDSLContent_Render_Download(exampleName)
+      console.log('exampleName', exampleName)
     },
     computeAllNodeTreeIndexWithDSL: function(nodeArrayWithValueObj, dslNameIndex) {
       let treeIndexWithDSL = {}
@@ -252,23 +262,28 @@ export default {
       return treeIndexWithDSL
     },
     setTreeDSLContent_Render_Download: function(dslNameIndex) {
-     return new Promise((res, rej) => {
-        setTimeout(() => {
-          let layoutParas = sysDatasetObj.getLayoutParas()
-          let nodeArrayWithValueObj = sysDatasetObj.getNodeArrayWithValueObj()
-          let treeIndexWithDSL = this.computeAllNodeTreeIndexWithDSL(nodeArrayWithValueObj, dslNameIndex)
-          layoutParas.treeIndexWithDSL = treeIndexWithDSL
-          layoutParas.treeDSLContentObj = this.getTreeDSLContentObj(treeIndexWithDSL)
+      console.log('run setTreeDSLContent_Render_Download')
+      return new Promise((res, rej) => {
+        console.log('run setTreeDSLContent_Render_Download promise')
+        // setTimeout(() => {
+        console.log('run setTreeDSLContent_Render_Download promise set_timeout')
+        let layoutParas = sysDatasetObj.getLayoutParas()
+        let nodeArrayWithValueObj = sysDatasetObj.getNodeArrayWithValueObj()
+        let treeIndexWithDSL = this.computeAllNodeTreeIndexWithDSL(nodeArrayWithValueObj, dslNameIndex)
+        layoutParas.treeIndexWithDSL = treeIndexWithDSL
+        layoutParas.treeDSLContentObj = this.getTreeDSLContentObj(treeIndexWithDSL)
+        // setTimeout(function() {
+          // this.UPDATE_TREE_CANVAS_LAYOUT_STATE()
+          this.computeAreaDataObj(this)
+          // res()
+          // rej('failed')
           // setTimeout(function() {
-            // this.UPDATE_TREE_CANVAS_LAYOUT_STATE()
-            this.computeAreaDataObj(this)
-            res(dslNameIndex)
-            // setTimeout(function() {
-            //   self.save_as_png()
-            // }, 100)
-          // }, 3000)
-        }, 1000);
-     });
+          //   self.save_as_png()
+          // }, 100)
+        // }, 3000)
+        // }, 1000);
+        res(10000)
+      });
     },
     //  计算树可视化的对象所占据的区域
     computeAreaDataObj: function(self) {
@@ -452,75 +467,6 @@ export default {
         }
       }
       return treeIndexWithDSL
-    },
-    //  获取节点的Id数组
-    getQueryNodeIdArray: function (queryObject, nodeArrayWithValueObj) {
-      let attribute = queryObject.attribute
-      let criteria = queryObject.criteria
-      let nodeIdArray = []
-      switch (criteria) {
-        case 'odd': {
-          for (let item in nodeArrayWithValueObj) {
-            if ((nodeArrayWithValueObj[item][attribute] % 2) === 1) {
-              nodeIdArray.push(nodeArrayWithValueObj[item].index)
-            }
-          }
-          break
-        }
-        case 'even': {
-          for (let item in nodeArrayWithValueObj) {
-            if ((nodeArrayWithValueObj[item][attribute] % 2) === 0) {
-              nodeIdArray.push(nodeArrayWithValueObj[item].index)
-            }
-          }
-          break
-        }
-        default: {
-          for (let item in nodeArrayWithValueObj) {
-            if (nodeArrayWithValueObj[item][attribute] === criteria) {
-              nodeIdArray.push(nodeArrayWithValueObj[item].index)
-            }
-          }
-          break
-        }
-      }
-      return nodeIdArray
-    },
-    //  高亮选择的节点数组
-    getFocusedTreeObjIdArray: function (nodeArray, assignRecursiveMode, nodeArrayObj) {
-      let focusedTreeObjIdArray = []
-      for (let i = 0;i < nodeArray.length;i++) {
-        let nodeId = nodeArray[i]
-        let selectedNodeArray = []
-        // 根据是否递归的条件判断
-        if ((assignRecursiveMode === 'true') || (assignRecursiveMode === true)) {
-          selectedNodeArray = getDescendantNodeArray(nodeId)
-        } else if ((assignRecursiveMode === 'false') || (assignRecursiveMode === false)) {
-          selectedNodeArray = [nodeId]
-        }
-        for (let sI = 0; sI < selectedNodeArray.length; sI++) {
-          if (focusedTreeObjIdArray.indexOf(selectedNodeArray[sI]) === -1) {
-            focusedTreeObjIdArray.push(selectedNodeArray[sI])
-          }
-        }
-      }
-      return focusedTreeObjIdArray
-      //  获取后代的节点
-      function getDescendantNodeArray(lightupID) {
-        var node = []
-        var allNodeArray = [lightupID]
-        while(lightupID !== undefined){
-          if ('children' in nodeArrayObj[lightupID]) {
-            for(let i=0;i<nodeArrayObj[lightupID].children.length;i++){
-              let SonID = nodeArrayObj[lightupID].children[i].index
-              node.push(SonID)
-              allNodeArray.push(SonID)
-            }
-          }
-          lightupID = node.shift()
-        }
-        return allNodeArray
-      }
     },
     //  将画布上的树可视化保存为png
     save_as_png: function() {
