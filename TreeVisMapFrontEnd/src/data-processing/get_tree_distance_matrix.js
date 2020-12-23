@@ -17,15 +17,14 @@ export function getTreeDistanceMatrix (maxDslAmountIndex, callbackFunc) {
 		//	计算树布局的距离矩阵
 		let layoutParas = sysDatasetObj.getLayoutParas()
 		let nodeArrayWithValueObj = sysDatasetObj.getNodeArrayWithValueObj()
-		let treeIndexWithDSL = computeAllNodeTreeIndexWithDSL(nodeArrayWithValueObj, dslNameIndex)
+		let treeIndexWithDSL = sysDatasetObj.computeAllNodeTreeIndexWithDSL(nodeArrayWithValueObj, dslNameIndex)
 		layoutParas.treeIndexWithDSL = treeIndexWithDSL
-		layoutParas.treeDSLContentObj = getTreeDSLContentObj(treeIndexWithDSL)
+		layoutParas.treeDSLContentObj = sysDatasetObj.getTreeDSLContentObj(treeIndexWithDSL)
 		computeAreaDataObj(layoutParas, positionArrays, deferObjArray, dslNameIndex)
 	}
 }
 function computeNodeDistance(positionArrays) {
   let distanceArray = []
-  console.log('positionArrays', positionArrays)
   for (let i = 0; i < positionArrays.length; i++) {
     let temp = []
     for (let j = 0; j < positionArrays.length; j++) {
@@ -55,22 +54,6 @@ function computeNodeDistance(positionArrays) {
     return ans
   }
 }
-function computeAllNodeTreeIndexWithDSL(nodeArrayWithValueObj, dslNameIndex) {
-  let treeIndexWithDSL = {}
-  for (let item in nodeArrayWithValueObj) {
-    treeIndexWithDSL[item] = dslNameIndex
-  }
-  return treeIndexWithDSL
-}
-
-function getTreeDSLContentObj(treeIndexWithDSL) {
-   let treeDSLContentObj = {}
-   for(let item in treeIndexWithDSL) {
-    let dslName = treeIndexWithDSL[item]
-    treeDSLContentObj[dslName] = sysDatasetObj.getTreeDSLObject(dslName)
-   }
-   return treeDSLContentObj
- }
 
  //  计算树可视化的对象所占据的区域
 function computeAreaDataObj(layoutParas, positionArrays, deferObjArray, dslNameIndex) {

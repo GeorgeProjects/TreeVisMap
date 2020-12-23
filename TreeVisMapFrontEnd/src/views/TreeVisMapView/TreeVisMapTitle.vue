@@ -1,5 +1,5 @@
 <template>
-  <div class = "container" id = "tree-canvas-title">
+  <div class = "container" id = "tree-vis-map-title">
     <span class = "text">{{title}}</span>
     <span class = "operation">
       <span class = "mode-selection">
@@ -428,7 +428,7 @@ export default {
 }
 </script>
 <style lang="less">
-  .container#tree-canvas-title {
+  .container#tree-vis-map-title {
     .icon-selection:hover, .icon-assemble:hover, .icon-qingchu:hover {
       background: #ccc !important;
     }
@@ -490,7 +490,7 @@ export default {
   }
 </style>
 <style scoped lang="less">
-  .container#tree-canvas-title {
+  .container#tree-vis-map-title {
     display: flex; 
     width: 100%; 
     height: 100%; 

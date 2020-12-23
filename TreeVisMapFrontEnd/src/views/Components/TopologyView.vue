@@ -19,16 +19,16 @@
 				<el-row class="row-container" :gutter="20">
 				  <el-col :offset="1" :span="1" class="row-bg col-container">
 				  </el-col>
-				  <el-col :span="6" class="row-bg col-container">
+				  <!-- <el-col :span="6" class="row-bg col-container">
 				  	<span class = "inner-label">
 				  		<span class="icon iconfont" :class="getIconClassX(name)"></span>
 				  	</span>
-				  	<!-- <el-divider direction="vertical"></el-divider> -->
+				  	<el-divider direction="vertical"></el-divider>
 				  	<span class = "inner-label">
 				  		<span class="icon iconfont" :class="getIconClassY(name)"></span>
 				  	</span>
-				  </el-col>
-				  <el-col :span="12" class="row-bg col-container">
+				  </el-col> -->
+				  <el-col :span="18" class="row-bg col-container">
 				  	<span class = "inner-label">
 				  		{{name}}
 				  	</span>
@@ -40,9 +40,9 @@
 				  	</span>
 				  </el-col>
 				  <div class = "detail-component-panel el-col el-col-offset-1 el-col-22" v-if="name === selectedRelationName">
-				  	<IncludePara v-if="name==='include'" :axisDsl="includeObj"></IncludePara>
+				  	<!-- <IncludePara v-if="name==='include'" :axisDsl="includeObj"></IncludePara>
 				  	<JuxtaposePara v-if="name==='juxtapose'" :axisDsl="juxtaposeObj"></JuxtaposePara>
-				  	<WithinPara v-if="name==='within'" :axisDsl="withinObj"></WithinPara>
+				  	<WithinPara v-if="name==='within'" :axisDsl="withinObj"></WithinPara> -->
 				  </div>
 				</el-row>
 			</drag>
@@ -61,16 +61,16 @@
 				<el-row class="row-container" :gutter="20">
 				  <el-col :offset="1" :span="1" class="row-bg col-container">
 				  </el-col>
-				  <el-col :span="6" class="row-bg col-container">
+				  <!-- <el-col :span="6" class="row-bg col-container">
 				  	<span class = "inner-label">
 				  		<span class="icon iconfont" :class="getIconClassX(name)"></span>
 				  	</span>
-				  	<!-- <el-divider direction="vertical"></el-divider> -->
+				  	<el-divider direction="vertical"></el-divider>
 				  	<span class = "inner-label">
 				  		<span class="icon iconfont" :class="getIconClassY(name)"></span>
 				  	</span>
-				  </el-col>
-				  <el-col :span="12" class="row-bg col-container">
+				  </el-col> -->
+				  <el-col :span="18" class="row-bg col-container">
 				  	<span class = "inner-label">
 				  		{{name}}
 				  	</span>

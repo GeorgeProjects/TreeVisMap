@@ -125,7 +125,7 @@
 						.indexOf(this.tempSelection) !== -1)
 				if (selectionExisted) {
 					this.selectedTreeDataName = this.tempSelection
-					this.updateSelectedTreeDateName(this.selectedTreeDataName)
+					this.updateSelectedTreeDatasetName(this.selectedTreeDataName)
 					this.tempSelection = null
 					self.$cookies.set('selected-data-name', this.selectedTreeDataName)
 				}
@@ -211,8 +211,8 @@
 			}
       	},
       	//  传递选择的项目
-	    updateSelectedTreeDateName: function (selectedFileName) {
-	        this.$emit('updateSelectedTreeDateName', selectedFileName)
+	    updateSelectedTreeDatasetName: function (selectedFileName) {
+	        this.$emit('updateSelectedTreeDatasetName', selectedFileName)
 	    },
 	    promptMessage: function(type, message) {
 			this.$message({

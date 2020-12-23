@@ -3,6 +3,9 @@ export default function makeTreeUnits (treeData, treeDsls, treeDic) {
     let index = treeData.index
     let dslName = index in treeDic ? treeDic[index] : treeDic.default
     let dsl = treeDsls[dslName]
+    if (typeof(dsl) === 'undefined') {
+        console.log('dslName', dslName, 'treeDsls', treeDsls)
+    }
     if (dsl.Layout.Category === 'AxisIndependent') {
         treeUnits[index] = {
             data: treeData,

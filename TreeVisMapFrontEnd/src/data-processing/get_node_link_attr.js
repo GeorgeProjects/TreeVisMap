@@ -1,21 +1,39 @@
 import { createVisualElement, computeVisualElementPos, computeAreaLabelPath} from '@/computation/visual_element_attr.js'
+import { getIsRootCentricAttribute } from '@/data-processing/get_root_centric_attribute.js'
 import { translatePath } from '@/computation/translate_path.js'
+//  import different link object
+import { ArcCurve } from '@/link/ArcCurve.js';
+import { Curve } from '@/link/Curve.js';
+import { CurveStepAfter } from '@/link/CurveStepAfter.js';
+import { CurveStepBefore } from '@/link/CurveStepBefore.js';
+import { CurveStepX } from '@/link/CurveStepX.js';
+import { LinkHorizontal } from '@/link/LinkHorizontal.js';
+import { Orthogonal } from '@/link/Orthogonal.js';
+import { Straight } from '@/link/Straight.js';
+
 export function getNodeLinkAttr (areaData, dslContentObject, treeIndexWithDSL, treeViewPosLenObj, nodeArray) {
-	  //  遍历得到全部nodeId的数组
+    /**
+     * compute the visual elements, nodes and links 
+     */
+    // areaData is a object to save all the attributes, 
+    // the key of this object is the incident id, for example, 'index-0', 'index-1', ..., 'index-26', ...
+    // nodeIdArray is ['index-1', 'index-2', ..., 'index-10', ...]
     let nodeIdArray = []
     for (let nodeId in areaData) {
       nodeIdArray.push(nodeId)
     }
-    // nodeIdArray = nodeIdArray.sort()
+    // sort nodeIdArray according to the node id
     nodeIdArray = nodeIdArray.sort(function(a, b) {
       var aNum = a.replace('index-', '')
       var bNum = b.replace('index-', '')
       return aNum - bNum
     })
+    // setting the root node id of the whole tree
     let currentRootID = nodeIdArray[0]
-    //  将AreaData对象转换为AreaData数组，并且构建linkData的数组, 用于数据绑定的数组
-   	let areaDataArray = []
-    //  LinkData存储孩子父亲结点id对，用于生成父子间的link
+    // transform the areaDataObject into array, [{}, {}, {}, ..., {}]
+    // construct the linkDataArray, [{beginid: 'index-1', endid: 'index-2'}, {beginid: '', endid: ''}, ......]
+    // and used as the links between the nodes
+     let areaDataArray = []
     let linkDataArray = []
     for (let item in areaData) {
       areaDataArray.push(areaData[item])
@@ -24,7 +42,16 @@ export function getNodeLinkAttr (areaData, dslContentObject, treeIndexWithDSL, t
         linkDataArray.push(linkdata)
       }
     }
-    //  获取最原始的数据
+    //  nodeArrayObj is the original data, this data object saves the raw data, mainly record  
+    //  the parent-child relationships among different nodes
+    //  [{
+    //    children: [],
+    //    data: {
+    //      index: 'index-0'
+    //    }, // mainly the attribute values
+    //    depth: 0,
+    //    height: 2
+    //  }, {}, {}]
     let nodeArrayObj = {}
     if (typeof(nodeArray) !== 'undefined') {
       for (let i = 0; i < nodeArray.length; i++) {
@@ -33,26 +60,33 @@ export function getNodeLinkAttr (areaData, dslContentObject, treeIndexWithDSL, t
          nodeArrayObj[nodeIndex] = nodeObj.data
       }
     }
-    //  计算areaDataArray中节点的数组
+    //  extract the node position of nodes in tree visualizations, 
+    //  mainly used the attributes, x, y, Rootx, Rooty, RootWidth, RootHeight
     let areaDataNodePosArray = computeAreaDataNodePosArray(areaDataArray)
-    //  计算areaDataArray中节点的label对应的路径
+    //  extract the position of the whole subtree in tree visualizations
+    //  mainly used the attributes: x, y, TreeWidth, TreeHeight
+    let areaDataTreePosArray = computeAreaDataTreePosArray(areaDataArray)
+    //  compute the path of label in tree visualization nodes
     let areaLabelPathArray = computeAreaLabelPathArray(areaDataArray)
-    //  计算areaDataArray中节点位置的范围
-    let SubtreeDataPos = computeSubTreeDataPos(areaDataNodePosArray) 
-    //  计算节点数组，每个节点对象中包含节点的属性
+    //  compute the range of all nodes in the whole tree visualization
+    let wholetreeDataRange = computeWholeTreeDataRange(areaDataNodePosArray) 
+    //  compute the object array about different attributes, 
+    //  including the node position, tree position, label path, etc. 
     for (let i = 0; i < areaDataArray.length; i++) {
       let areaDataObj = areaDataArray[i]
       let areaDataNodePosObj = areaDataNodePosArray[i]
+      let areaDataTreePosObj = areaDataTreePosArray[i]
       let areaLabelPathObj = areaLabelPathArray[i]
-      computeNodeDataAttr(areaDataObj, areaDataNodePosObj, SubtreeDataPos, areaLabelPathObj)
+      computeNodeDataAttr(areaDataObj, areaDataNodePosObj, areaDataTreePosObj, wholetreeDataRange, areaLabelPathObj, areaDataArray)
     }
+    // compute the direct lines between the nodes in tree visualization 
     for (let i = 0; i < linkDataArray.length; i++) {
       let linkdata = linkDataArray[i]
-      linkdata.pathAttr = directLineData(linkdata)
+      linkdata.pathAttr = directLineData(linkdata, wholetreeDataRange)
     }
     computeNodeLabelDataAttr(areaDataArray)
     return [areaDataArray, linkDataArray]
-	  //  计算areaDataArray中节点位置的数组
+    //  计算areaDataArray中节点位置的数组
     function computeAreaDataNodePosArray(areaDataArray) {
       let areaDataNodePosArray = []
       for(let i = 0; i < areaDataArray.length; i++) {
@@ -62,6 +96,17 @@ export function getNodeLinkAttr (areaData, dslContentObject, treeIndexWithDSL, t
         areaDataNodePosArray.push({x: nodeObjX, y: nodeObjY})
       }
       return areaDataNodePosArray
+    }
+    //  计算areaDataArray中节点所对应的Tree的位置的数组
+    function computeAreaDataTreePosArray(areaDataArray) {
+      let areaDataTreePosArray = []
+      for(let i = 0; i < areaDataArray.length; i++) {
+        let nodeObj = areaDataArray[i]
+        let treeObjX = nodeObj.x + nodeObj.Width / 2
+        let treeObjY = nodeObj.y + nodeObj.Height / 2
+        areaDataTreePosArray.push({x: treeObjX, y: treeObjY})
+      }
+      return areaDataTreePosArray
     }
     //  计算areaDataArray中节点的标签对应的路径
     function computeAreaLabelPathArray(areaDataArray) {
@@ -221,62 +266,75 @@ export function getNodeLinkAttr (areaData, dslContentObject, treeIndexWithDSL, t
          }
        }
     }
-    //  计算subtree data的范围
-    function computeSubTreeDataPos(areaDataNodePosArray) {
-      let _SubtreeDataPos = {xmin: 1000000, ymin: 1000000, xmax: 0, ymax: 0}
+    //  compute the range of subtree node positions
+    //  it is used to place nodes in the polar coordinate system
+    function computeWholeTreeDataRange(areaDataNodePosArray) {
+      let _wholeTreeDataRange = { xmin: Infinity, ymin: Infinity, xmax: 0, ymax: 0 }
       for(let i = 0; i < areaDataNodePosArray.length; i++) {
         let nodePosObj = areaDataNodePosArray[i]
         let nodeObjX = nodePosObj.x
         let nodeObjY = nodePosObj.y
-        if (_SubtreeDataPos.xmin > nodeObjX) {
-          _SubtreeDataPos.xmin = nodeObjX
+        if (_wholeTreeDataRange.xmin > nodeObjX) {
+          _wholeTreeDataRange.xmin = nodeObjX
         }
-        if (_SubtreeDataPos.xmax < nodeObjX) {
-          _SubtreeDataPos.xmax = nodeObjX
+        if (_wholeTreeDataRange.xmax < nodeObjX) {
+          _wholeTreeDataRange.xmax = nodeObjX
         }
-        if (_SubtreeDataPos.ymin > nodeObjY) {
-          _SubtreeDataPos.ymin = nodeObjY
+        if (_wholeTreeDataRange.ymin > nodeObjY) {
+          _wholeTreeDataRange.ymin = nodeObjY
         }
-        if (_SubtreeDataPos.ymax < nodeObjY) {
-          _SubtreeDataPos.ymax = nodeObjY
+        if (_wholeTreeDataRange.ymax < nodeObjY) {
+          _wholeTreeDataRange.ymax = nodeObjY
         }
       }
-      let SubtreeDataPos = {
-        "x": _SubtreeDataPos.xmin,
-        "y": _SubtreeDataPos.ymin,
-        "TreeWidth": _SubtreeDataPos.xmax - _SubtreeDataPos.xmin,
-        "TreeHeight": _SubtreeDataPos.ymax - _SubtreeDataPos.ymin
+      let wholetreeDataRange = {
+        "x": _wholeTreeDataRange.xmin,
+        "y": _wholeTreeDataRange.ymin,
+        "TreeWidth": _wholeTreeDataRange.xmax - _wholeTreeDataRange.xmin,
+        "TreeHeight": _wholeTreeDataRange.ymax - _wholeTreeDataRange.ymin
       }
-      return SubtreeDataPos
+      return wholetreeDataRange
     }
-
-    //  结点绘制信息
-    function computeNodeDataAttr(areaDataObj, areaDataNodePosObj, SubtreeDataPos, areaLabelPathObj) {
+    /**
+     * compute the detailed information of visual elements in tree visualization
+     * @param  {[type]} areaDataObj        [the detailed information of each node]
+     * @param  {[type]} areaDataNodePosObj [the specific node position of each node]
+     * @param  {[type]} areaDataTreePosObj [the speccificn position of corresponding subtree for different nodes]
+     * @param  {[type]} wholetreeDataRange [the range of whole tree visualization, including x, y, width, and height]
+     * @param  {[type]} areaLabelPathObj   [the path of area label for the nodes in tree visualizations]
+     * @param  {[type]} areaDataArray      [the whole nodes array, contains the detail information of all nodes in tree visualizations ]
+     * @return {[type]}                    [description]
+     */
+    function computeNodeDataAttr(areaDataObj, areaDataNodePosObj, areaDataTreePosObj, wholetreeDataRange, areaLabelPathObj, areaDataArray) {
       let coordinateSystem = dslContentObject[treeIndexWithDSL[areaDataObj.id]].CoordinateSystem.Category
       let WidthScale = treeViewPosLenObj.width/areaData[currentRootID].Width
-      let HeightScale = treeViewPosLenObj.height/areaData[currentRootID].Height 
+      let HeightScale = treeViewPosLenObj.height/areaData[currentRootID].Height
+      // positions of root node
       let movex = 0, movey = 0
       if (areaDataObj.fatherID != null) {
         movex = areaData[currentRootID].x //- areaData[areaDataObj.fatherID].SubtreesX 
         movey = areaData[currentRootID].y //- areaData[areaDataObj.fatherID].SubtreesY//
       }
+      // set the raw data (attribute values of data object) with the areaDataObj
       if (typeof(nodeArrayObj[areaDataObj.id]) !== 'undefined') {
         areaDataObj.data = nodeArrayObj[areaDataObj.id]
       }
-      //  在节点对象中增加name属性
+      // set the name attribute from inner data attribute with the node object
       let nodeObjName = ''
       if (typeof(nodeArrayObj[areaDataObj.id]) !== 'undefined') {
         nodeObjName = nodeArrayObj[areaDataObj.id].name
       }
       areaDataObj.name = nodeObjName
-      // 在节点对象中增加value属性
+      // set the value attribute from inner data attribute with the node object
       let nodeObjValue = 0
       if (typeof(nodeArrayObj[areaDataObj.id]) !== 'undefined') {
         nodeObjValue = nodeArrayObj[areaDataObj.id].value
       }
       areaDataObj.value = nodeObjValue
+      // get the dsl about the visual element
       let elementObj = dslContentObject[treeIndexWithDSL[areaDataObj.id]].Element
-      let nodeObj = {'id': areaDataObj.id,
+      let nodeObj = {
+                     'id': areaDataObj.id,
                      'x': (areaData[areaDataObj.id].x + movex) * WidthScale,
                      'y': (areaData[areaDataObj.id].y + movey) * HeightScale,
                      'Rootx': areaData[areaDataObj.id].Rootx * WidthScale,
@@ -286,159 +344,264 @@ export function getNodeLinkAttr (areaData, dslContentObject, treeIndexWithDSL, t
                      'isLeaf': areaData[areaDataObj.id].isLeaf,
                      'Width': areaData[areaDataObj.id].Width * WidthScale,
                      'Height': areaData[areaDataObj.id].Height * HeightScale,
-                     'depth': areaData[areaDataObj.id].depth}
+                     'depth': areaData[areaDataObj.id].depth
+                    }
       if (isNaN(nodeObj.x) || isNaN(nodeObj.RootWidth)) {
+        console.log('areaData[areaDataObj.id].Rootx', areaData[areaDataObj.id].Rootx)
       }
-      let SubTreeData = {}
-      SubTreeData['TreeWidth'] = treeViewPosLenObj.width
-      SubTreeData['TreeHeight'] = self.treeHeight
-      let currentNodeSystem = coordinateSystem
-      let currentID = areaDataObj.id
-      let currentNodeCoordinateSystemObj = dslContentObject[treeIndexWithDSL[currentID]].CoordinateSystem
-        while (1) {
-          if (currentNodeSystem === 'polar') {
-            SubTreeData['TreeWidth'] = areaData[currentID].Width
-            SubTreeData['TreeHeight'] = areaData[currentID].Height
-            SubTreeData['x'] = areaData[currentID].x
-            SubTreeData['y'] = areaData[currentID].y
-            currentNodeCoordinateSystemObj = dslContentObject[treeIndexWithDSL[currentID]].CoordinateSystem
-          }
-          currentID = areaData[currentID].fatherID
-          if(currentID === null)
-            break
-          currentNodeSystem = dslContentObject[treeIndexWithDSL[currentID]].CoordinateSystem.Category
+      // compute the detailed information of two coordinate systems, including:
+      //    - subtreeData, and
+      //    - coordinate system
+      // the first coordinate system is to compute the visual element,
+      // the second coordinate system is to compute the node layout
+      // for root-centric polar coordinate system, the subtreeData is the subtree data at the top level, 
+      //   these two coordinate system should be same
+      // for parent-centric polar coordinate system, 
+      //    - the subtree data to compute visual element is the current subtreeData
+      //    - the coordinate system to compute node layout is subtreeData in the upper level
+      // the coordinate system is either polar coordinate system or cartesian coordinate system
+      let minTraversalNum_visualelement = 0
+      let subTreeData_coordinateSystem_visualelement = computeShallowest(coordinateSystem, areaDataObj, minTraversalNum_visualelement)
+      let subTreeData_visualelement = subTreeData_coordinateSystem_visualelement['SubTreeData']
+      let currentNodeCoordinateSystemObj_visualelement = subTreeData_coordinateSystem_visualelement['CoordinateSystem']
+      //  the coordinate system is to compute the layout of visual element
+      let minTraversalNum_layout = 1
+      let subTreeData_coordinateSystem_layout = computeShallowest(coordinateSystem, areaDataObj, minTraversalNum_layout)
+      let subTreeData_layout = subTreeData_coordinateSystem_layout['SubTreeData']
+      let currentNodeCoordinateSystemObj_layout = subTreeData_coordinateSystem_layout['CoordinateSystem']
+      //  update the wholetreeDataRange object according to the axis of polar coordinate system
+      if (subTreeData_coordinateSystem_layout.Category === 'polar') {
+        if (subTreeData_coordinateSystem_layout.PolarAxis === 'y-axis') {
+          wholetreeDataRange['x'] = subTreeData['x']
+          wholetreeDataRange['TreeWidth'] = subTreeData['TreeWidth']
+        } else if (subTreeData_coordinateSystem_layout.PolarAxis === 'x-axis') {
+          wholetreeDataRange['y'] = subTreeData['y']
+          wholetreeDataRange['TreeHeight'] = subTreeData['TreeHeight']
         }
-      // let CoordinateSystem = dslContentObject[treeIndexWithDSL[areaDataObj.id]].CoordinateSystem
-      //  修改SubtreeDataPos的横向参数x和TreeWidth为整个canvas的长度
-      SubtreeDataPos['x'] = SubTreeData['x']
-      SubtreeDataPos['TreeWidth'] = SubTreeData['TreeWidth']
-      //  调用createVisualElement
-      let areaDataObjElement = createVisualElement (currentNodeCoordinateSystemObj, elementObj, nodeObj, SubTreeData, SubtreeDataPos)
+      }
+      // compute the node object in the upper level
+      let fatherAreaDataObj = getFatherAreaDataObj (areaDataObj, areaDataArray)
+      // compute the position of area data object
+      let areaDataObjPos = computeVisualElementPos (currentNodeCoordinateSystemObj_layout, elementObj, nodeObj, subTreeData_layout, wholetreeDataRange, areaDataNodePosObj, areaDataTreePosObj, fatherAreaDataObj)
+      if (typeof(areaDataObjPos) !== 'undefined') {
+        areaDataObj.pos = areaDataObjPos
+        // CHANGE
+        let rootCentric = getIsRootCentricAttribute(currentNodeCoordinateSystemObj_layout)
+        if (rootCentric) {
+          areaDataObj._pos = areaDataNodePosObj
+        } else {
+          areaDataObj._pos = areaDataTreePosObj
+        }
+      }
+      //  compute the visual element of the area data object to create the elements
+      let areaDataObjElement = createVisualElement (currentNodeCoordinateSystemObj_visualelement, elementObj, nodeObj, subTreeData_visualelement, wholetreeDataRange, areaDataObj) //fatherAreaDataObj, areaDataObj
       if (typeof(areaDataObjElement) !== 'undefined') {
         areaDataObj.element = areaDataObjElement
       }
-      let areaDataObjPos = computeVisualElementPos (currentNodeCoordinateSystemObj, elementObj, nodeObj, SubTreeData, SubtreeDataPos, areaDataNodePosObj)
-      if (typeof(areaDataObjPos) !== 'undefined') {
-        areaDataObj.pos = areaDataObjPos
-      }
-      let areaLabelPath = computeAreaLabelPath(currentNodeCoordinateSystemObj, SubTreeData, areaLabelPathObj)
+      // compute the path of the labels
+      let areaLabelPath = computeAreaLabelPath (currentNodeCoordinateSystemObj_layout, subTreeData_layout, areaLabelPathObj)
       if ((typeof(areaLabelPath) !== 'undefined') && (areaLabelPath != null)) {
         areaDataObj.labelPath = areaLabelPath
       }
     }
-    //  生成link的path的d
-    function directLineData(d) {
+    // compute the areaDataArray in the upper level
+    function getFatherAreaDataObj(areaDataObj, areaDataArray) {
+      let fatherNodeId = areaDataObj['fatherID']
+      if (fatherNodeId == null) {
+        return null
+      } 
+      let fatherAreaObjIndex = +fatherNodeId.replace('index-', '')
+      return areaDataArray[fatherAreaObjIndex]
+    }
+    //  compute the root node at the top level
+    function computeShallowest(coordinateSystem, areaDataObj, minTraversalNum) {
+      let subTreeData = {}
+      subTreeData['TreeWidth'] = treeViewPosLenObj.width
+      subTreeData['TreeHeight'] = treeViewPosLenObj.height
+      let currentNodeSystem = coordinateSystem
+      let currentID = areaDataObj.id
+      let currentNodeCoordinateSystemObj = dslContentObject[treeIndexWithDSL[currentID]].CoordinateSystem
+      let backTraversal = 0
+      // indicate whether the start node is parent-centric
+      let startNodeIsParentCentric = !getIsRootCentricAttribute(currentNodeCoordinateSystemObj)
+      while (true) {
+        let currentNodeIsParentCentric = !getIsRootCentricAttribute(currentNodeCoordinateSystemObj)
+        let updateSubtreeData = false
+        if (currentNodeSystem === 'polar') {
+          updateSubtreeData = true
+        } else {
+          if (startNodeIsParentCentric) {
+            updateSubtreeData = true
+            startNodeIsParentCentric = false
+          }
+        }
+        if (updateSubtreeData) {
+          subTreeData['TreeWidth'] = areaData[currentID].Width
+          subTreeData['TreeHeight'] = areaData[currentID].Height
+          subTreeData['x'] = areaData[currentID].x
+          subTreeData['y'] = areaData[currentID].y
+          currentNodeCoordinateSystemObj = dslContentObject[treeIndexWithDSL[currentID]].CoordinateSystem
+        }
+        currentID = areaData[currentID].fatherID
+        if (currentID === null) {
+          break
+        }
+        // 向上递归寻找最上层的subtree，如果当前是polar，且currentNodeIsParentCentric为true (说明以parent node为根节点)，并且定位到某一个关心的层级
+        // 那么就停止递归调用
+        if ((currentNodeSystem === 'polar') && (currentNodeIsParentCentric) && (backTraversal >= minTraversalNum)) {
+          break
+        }
+        currentNodeSystem = dslContentObject[treeIndexWithDSL[currentID]].CoordinateSystem.Category
+        backTraversal = backTraversal + 1
+      }
+      // let CoordinateSystem = dslContentObject[treeIndexWithDSL[areaDataObj.id]].CoordinateSystem
+      //  修改wholetreeDataRange的横向参数x和TreeWidth为整个canvas的长度
+      return {
+        'SubTreeData': subTreeData,
+        'CoordinateSystem': currentNodeCoordinateSystemObj
+      }
+    }
+    //  计算最上层的根节点
+    // function computeShallowest(coordinateSystem, areaDataObj) {
+    //   let subTreeData = {}
+    //   subTreeData['TreeWidth'] = treeViewPosLenObj.width
+    //   subTreeData['TreeHeight'] = treeViewPosLenObj.height
+    //   let currentNodeSystem = coordinateSystem
+    //   let currentID = areaDataObj.id
+    //   let currentNodeCoordinateSystemObj = dslContentObject[treeIndexWithDSL[currentID]].CoordinateSystem
+    //   let backTraversal = 0
+    //   console.log('areaData', areaData)
+    //   while (true) {
+    //     if (currentNodeSystem === 'polar') {
+    //       subTreeData['TreeWidth'] = areaData[currentID].Width
+    //       subTreeData['TreeHeight'] = areaData[currentID].Height
+    //       subTreeData['x'] = areaData[currentID].x
+    //       subTreeData['y'] = areaData[currentID].y
+    //       currentNodeCoordinateSystemObj = dslContentObject[treeIndexWithDSL[currentID]].CoordinateSystem
+    //     }
+    //     currentID = areaData[currentID].fatherID
+    //     console.log('currentID', currentID)
+    //     if (currentID === null) {
+    //       break
+    //     }
+    //     if ((currentNodeSystem === 'polar') && (backTraversal >= 1)) {
+    //       break
+    //     } 
+    //     currentNodeSystem = dslContentObject[treeIndexWithDSL[currentID]].CoordinateSystem.Category
+    //     backTraversal = backTraversal + 1
+    //   }
+    //   //  修改wholetreeDataRange的横向参数x和TreeWidth为整个canvas的长度
+    //   return {
+    //     'SubTreeData': subTreeData,
+    //     'CoordinateSystem': currentNodeCoordinateSystemObj
+    //   }
+    // }
+    //  generate the original data of links between different nodes
+    function directLineData(d, wholetreeDataRange) {
         let beginID = d.beginid
         let endID = d.endid
-        let LinkTypeDSL = treeIndexWithDSL[beginID]
-        let elementObj = dslContentObject[LinkTypeDSL].Element
-        let linktype = elementObj.Link
-        if ((linktype === 'hidden') || (typeof(linktype) === 'undefined')) {
+        let linkTypeDSL = treeIndexWithDSL[beginID]
+        let elementObj = dslContentObject[linkTypeDSL].Element
+        let linkType = elementObj.Link
+        let nodeType = elementObj.Node
+        if ((linkType === 'hidden') || (typeof(linkType) === 'undefined')) {
           let endLinkTypeDSL = treeIndexWithDSL[endID]
           let endElementObj = dslContentObject[endLinkTypeDSL].Element
-          linktype = endElementObj.Link
+          linkType = endElementObj.Link
+          nodeType = elementObj.Node
         }
-        //  如果link的类型仍然为hidden，那么就不显示节点之间的连接
-        if (linktype === 'hidden') {
+        //  if the visibility of link is hidden, then do not render the links between nodes
+        if (linkType === 'hidden') {
           return
         }
+        // TODO
         let beginx = areaData[beginID].pos.x, beginy = areaData[beginID].pos.y, 
             endx = areaData[endID].pos.x, endy = areaData[endID].pos.y
+        // prefix _ indicate the position under cartesian coordinate system
+        let _beginx = areaData[beginID]._pos.x, _beginy = areaData[beginID]._pos.y, 
+            _endx = areaData[endID]._pos.x, _endy = areaData[endID]._pos.y
+        let beginPos = [beginx, beginy], endPos = [endx, endy],
+            _beginPos = [_beginx, _beginy], _endPos = [_endx, _endy]
+        let beginAreaDataObj = areaData[beginID]
+        let endAreaDataObj = areaData[endID]
+        let coordinateSystem = dslContentObject[treeIndexWithDSL[beginID]].CoordinateSystem.Category
+        //  compute the shallowest node start from the parent node
+        let minTraversalNum_layout = 1
+        let subTreeData_coordinateSystem_layout = computeShallowest(coordinateSystem, endAreaDataObj, minTraversalNum_layout)
+        let subTreeData_layout = subTreeData_coordinateSystem_layout['SubTreeData']
+        let currentNodeCoordinateSystemObj_layout = subTreeData_coordinateSystem_layout['CoordinateSystem']
+        // the coordinate system is to compute the shape of visual element
+        let minTraversalNum_visualelement = 0
+        let subTreeData_coordinateSystem_visualelement = computeShallowest(coordinateSystem, endAreaDataObj, minTraversalNum_visualelement)
+        let subTreeData_visualelement = subTreeData_coordinateSystem_visualelement['SubTreeData']
+        let currentNodeCoordinateSystemObj_visualelement = subTreeData_coordinateSystem_visualelement['CoordinateSystem']
+        // //  the coordinate system is to compute the layout of visual element
+        // let subTreeData_coordinateSystem = computeShallowest(coordinateSystem, areaDataObj, minTraversalNum_layout)
+        // let subTreeData = subTreeData_coordinateSystem['SubTreeData']
+        // let currentNodeCoordinateSystemObj = subTreeData_coordinateSystem['CoordinateSystem']
+        // TODO
+        wholetreeDataRange['x'] = subTreeData_layout['x']
+        wholetreeDataRange['TreeWidth'] = subTreeData_layout['TreeWidth']
+        
         //生成link的轨迹
-        let LineData
-        switch (linktype) {
+        let lineObject = null
+        let lineGenerator = null
+        switch (linkType) {
           //直线连接
-          case 'straight':{
-            let PosData = []
-            PosData.push([beginx,beginy])
-            PosData.push([endx,endy])
-            let lineGenerator = d3.line()
-            LineData = lineGenerator(PosData)
+          case 'straight': {
+            lineObject = new Straight(beginPos, endPos)
             break
           }
           //直角连接 x轴先变化 折两次
-          case 'curveStepX':{
-            let PosData = []
-            PosData.push([beginx,beginy])
-            PosData.push([endx,endy])
-            let lineGenerator = d3.line().curve(d3.curveStep)
-            LineData = lineGenerator(PosData)
-            break}
+          case 'curveStepX': {
+            lineObject = new CurveStepX(beginPos, endPos, _beginPos, _endPos)
+            break
+          }
           //直角连接 y轴先变化 折两次
-          case 'orthogonal':{
-            let PosData = []
-            PosData.push([beginx,beginy])
-            PosData.push([beginx,(beginy+endy)/2])
-            PosData.push([endx,(beginy+endy)/2])
-            PosData.push([endx,endy])
-            let lineGenerator = d3.line()
-            LineData = lineGenerator(PosData)
-            break}
+          case 'orthogonal': {
+            lineObject = new Orthogonal(beginPos, endPos, _beginPos, _endPos)
+            break
+          }
           //直角连接 x轴先变化 折一次
-          case 'curveStepAfter':{
-            let PosData = []
-            PosData.push([beginx,beginy])
-            PosData.push([endx,endy])
-            let lineGenerator = d3.line().curve(d3.curveStepAfter)
-            LineData = lineGenerator(PosData)
-            break}
+          case 'curveStepAfter': {
+            lineObject = new CurveStepAfter(beginPos, endPos, _beginPos, _endPos)
+            break
+          }
           //直角连接 y轴先变化 折一次
-          case 'curveStepBefore':{
-            let PosData = []
-            PosData.push([beginx,beginy])
-            PosData.push([endx,endy])
-            let lineGenerator = d3.line().curve(d3.curveStepBefore)
-            LineData = lineGenerator(PosData)
-            break}
+          case 'curveStepBefore': {
+            lineObject = new CurveStepBefore(beginPos, endPos, _beginPos, _endPos)
+            break
+          }
           //贝塞尔曲线 竖直
-          case 'curve':{
-            let PosData = {source:[beginx,beginy],target:[endx,endy]}
-            let lineGenerator = d3.linkVertical()
-            LineData = lineGenerator(PosData)
-            break}
+          case 'curve': {
+            lineObject = new Curve(beginPos, endPos)
+            break
+          }
           //贝塞尔曲线 水平
-          case 'linkHorizontal':{
-            let PosData = {source:[beginx,beginy],target:[endx,endy]}
-            let lineGenerator = d3.linkHorizontal()
-            LineData = lineGenerator(PosData)
-            break}
+          case 'linkHorizontal': {
+            lineObject = new LinkHorizontal(beginPos, endPos)
+            break
+          }
           //圆弧单边
-          case 'arccurve':{
-            let beginEndLength = Math.pow((Math.pow((beginx-endx), 2) + Math.pow((beginy-endy), 2)), 1/2)
-            let radius = beginEndLength / 2
-            let positionX = (beginx + endx) / 2
-            let positionY = (beginy + endy) / 2
-            let arcGenerator = d3.arc()
-              .innerRadius(radius)
-              .outerRadius(radius);
-            let initAngleSin = Math.round(positionY - beginy) / radius
-            initAngleSin = initAngleSin > 1?1:initAngleSin
-            initAngleSin = initAngleSin < -1?-1:initAngleSin
-            let initAngle = Math.asin(initAngleSin)
-            if (beginx <= positionX) {
-              // let startAngle = -Math.PI / 2 - initAngle, endAngle = Math.PI / 2 - initAngle  
-            } else {
-              initAngle = Math.PI - initAngle
-            }
-            if (radius > 0.001) {
-                let startAngle = 0 + initAngle, endAngle = Math.PI + initAngle
-                let anticlockwise = true
-                if (typeof(elementObj.ArcDirection) !== 'undefined') {
-                  let ArcDirection = elementObj.ArcDirection
-                  if (ArcDirection === 'bottom') {
-                    anticlockwise = false
-                  }
-                }
-                var path = d3.path();
-                path.arc(positionX, positionY, radius, startAngle, endAngle, anticlockwise)
-                LineData = path.toString()
-            }
+          case 'arccurve': {
+            let arcDirection = elementObj.ArcDirection
+            lineObject = new ArcCurve(beginPos, endPos, arcDirection)
             break
           }
         }
-        if ((linktype === 'curveStepAfter') || (linktype === 'curveStepBefore') || ((linktype === 'orthogonal'))) {
-          console.log('LineData', LineData)
+        if (currentNodeCoordinateSystemObj_layout.Category === 'polar') {
+          if (((nodeType === "circle") || (nodeType === "triangle") 
+              || (nodeType === 'ellipse') || (nodeType === "hidden")) && (linkType === 'curveStepAfter')) {
+            //  将极坐标轴建立在只有节点中心的部分
+            //  只有节点之间的连接为先水平，然后竖直的情况下才会设定wholetreeDataRange
+            if (beginID === 'index-0') {
+              return lineObject.generatePolarPath(currentNodeCoordinateSystemObj_layout, wholetreeDataRange)
+            } 
+          }
+          return lineObject.generatePolarPath(currentNodeCoordinateSystemObj_layout, subTreeData_layout)
+        } else if (currentNodeCoordinateSystemObj_layout.Category === 'cartesian') {
+          let lineData = lineObject.generatePath()
+          return lineData
         }
-        return LineData
-    }        
+    }       
 }

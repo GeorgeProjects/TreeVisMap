@@ -61,7 +61,7 @@ export default {
         selectAlignment(val) {
             this.axisDsl.Alignment = this.selectedPara
             // console.log(this.axisDsl.Alignment)
-            this.changeDSL(),
+            this.changeDSL()
             this.changeCanvas()
         }
     },

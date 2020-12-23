@@ -1,7 +1,5 @@
 <template>
   <div class='container' :id="treeCanvasContainerId">
-    <svg :id="treeCanvasSvgIdCopy">
-    </svg>
     <svg class='tree-canvas' :id="treeCanvasSvgId">
       <g :id="treeCanvasId"></g>
     </svg>
@@ -27,7 +25,8 @@ import OriginalDataView from './OriginalDataView.vue'
 import { getTreeNodeStyle } from '@/treevis-style/get_tree_node_style.js'
 import { getTreeLinkStyle } from '@/treevis-style/get_tree_link_style.js'
 import { addDefaultCoordElement } from '@/data-processing/add_default_coord_element.js'
-// let parseSVG = require('svg-path-parser');
+import { treeNodeValidate, treeLayoutValidate, areaDataValidate } from '@/error/ErrorValidate.js';
+import { throwGoTreeError } from '@/error/GoTreeError.js';
 
 export default {
   name: 'TreeCanvas',
@@ -43,8 +42,6 @@ export default {
       layoutParas: {},
       //  用于绘制树可视化形式的svg的id
       treeCanvasSvgId: 'tree-dsl-svg-canvas',
-      //  用于绘制树可视化形式的svg的拷贝
-      treeCanvasSvgIdCopy: 'tree-dsl-svg-canvas-copy',
       //  用于绘制树可视化形式的svg外部的div的id
       treeCanvasContainerId: 'tree-dsl-canvas-container',
       //  用于绘制树可视化形式的svg内部的g的id
@@ -52,7 +49,7 @@ export default {
       //  用于展示用户能够绘制的树的大小所增加的矩形的id
       treeCanvasRectId: 'canvas-region-outer-rect',
       //  进行动画变换的时长
-      DURATION: 500,
+      DURATION: 1000,
       //  用户点击选择的子树对象
       selectedItem: null,
       //  用于控制子树中节点的位置以及长度的对象的集合
@@ -62,24 +59,27 @@ export default {
       //  在svg上增加的g的class
       singleTreeG: 'tree-g',
       //  发生动画变换的时长
-      POSITION_DURATION: 400,
-      // ===========================
+      POSITION_DURATION: 900,
       colorAttr: 'depth',
       treeViewPosLenObj: {},
       currentRootID: 'index-0',
       treeGId: 'index-0-g',
       previewPanelOpen: false, // 初始的preview视图处于关闭的状态
       hybridNodeObjectNum: 10,
-      OPEN_PREVIEW_PANEL_DURATION: 250,
+      OPEN_PREVIEW_PANEL_DURATION: 500,
       horizontalArray: [0, 0.5, 1], //  横向的控制线的位置
       verticalArray: [0, 0.5, 1], //  纵向的控制线的位置
       treeViewWidth: 0, // 绘制层次结构数据视图的宽度
       treeViewHeight: 0, // 绘制层次结构数据视图的高度
       viewWidth: 0, //  视图的宽度
       viewHeight: 0, //  视图的高度
-      layouts: {}, //计算得到的节点的布局
-      areaDataArray: [],
-      linkDataArray: []
+      layouts: {}, // 计算得到的节点的布局
+      areaDataArray: [],  
+      AreaData: {}, //  AreaData is an object to save all the positions and sizes of the visual element in tree visualization
+      linkDataArray: [],  
+      treeNodeErrorMessage: 'The width or height of tree nodes is less than zero.',
+      treeNodeHintMessage: 'Please change the unit or reduce the value of margin or padding.',
+      svgViewBoxAttr: "0 0 0 0"
     }
   },
   components: {
@@ -89,8 +89,9 @@ export default {
   mounted: function() {
     let self = this
     // setTimeout(function() {
-      self.adjustTreeCanvas()
-      self.addZoomFunc()
+    self.adjustTreeCanvas()
+    self.addZoomFunc()
+    self.updateSVGViewbox()
     // }, 100)
   },
   watch: {
@@ -150,6 +151,12 @@ export default {
       let assignedAllNodesBoolean = assignedAllNodes(nodeArray, layoutParas.treeIndexWithDSL)
       if (assignedAllNodesBoolean) {
         getLayoutValue(layoutParas).then(function(treeLayout) {
+          if (!treeLayoutValidate(treeLayout)) {
+            self.clearTreeCanvas()
+            throwGoTreeError(self.treeNodeErrorMessage)
+            self.showHintMessage(self.treeNodeHintMessage, 'error')
+            return 
+          }
           self.layouts = treeLayout
           self.renderTreeVisResults(treeLayout)
         })
@@ -197,12 +204,20 @@ export default {
       this.treeIndexWithDSL = treeIndexWithDSL
       let treeViewPosLenObj = this.treeViewPosLenObj
       let currentRootID = this.currentRootID
+      //  get the attribute of whether the link display on the top of nodes
+      this.linkDisplayTop = sysDatasetObj.getLinkDisplayTop(dslContentObject)
       //  对treelayout进一步计算，得到各个结点在笛卡尔坐标系下的绝对坐标
       if ((typeof(treeIndexWithDSL) === 'undefined') || (typeof(dslContentObject) === 'undefined') 
           || (treelayout == null) || (typeof(treelayout) === 'undefined')) {
         return
       }
       this.AreaData = getTreeLayout(treeIndexWithDSL, dslContentObject, treelayout, nodeArray, treeViewPosLenObj)
+      if (!areaDataValidate(this.AreaData)) {
+        this.clearTreeCanvas()
+        throwGoTreeError(this.treeNodeErrorMessage)
+        this.showHintMessage(this.treeNodeHintMessage, 'error')
+        return 
+      }
       //  调整视图的位置
       this.appendTreeVisBoundingBox()
       //  获取所有的linear对象的link参数
@@ -210,25 +225,14 @@ export default {
       //  调整层次结构可视化形式的位置
       this.adjustTreePos()
     },
-    negativeExisted: function(areaData) {
-      let self = this
-      for (let item in areaData) {
-        let RootHeight = areaData[item].RootHeight
-        let RootWidth = areaData[item].RootWidth
-        if ((RootWidth < 0) || (RootHeight < 0)) {
-          return true
-        }
-      }
-      return false
-    },
     //  在svg上增加zoom的函数
     addZoomFunc: function() {
       let self = this
       let svgWidth = +$('#' + self.treeCanvasSvgId).width();
       let svgHeight = +$('#' + self.treeCanvasSvgId).height();
       var zoom = d3.zoom()
-        .scaleExtent([0.1, 40])
-        .translateExtent([[-100, -100], [svgWidth + 90, svgHeight + 100]])
+        .scaleExtent([0.001, 400])
+        // .translateExtent([[-100, -100], [svgWidth + 90, svgHeight + 100]])
         .on("zoom", zoomed);
       //  对于视图进行zoom
       function zoomed() {
@@ -237,14 +241,22 @@ export default {
       }
       d3.select('#' + self.treeCanvasSvgId).call(zoom);
     },
+    // update view box attribute of svg
+    updateSVGViewbox: function() {
+      let svgWidth = +$('#' + this.treeCanvasSvgId).width();
+      let svgHeight = +$('#' + this.treeCanvasSvgId).height();
+      let viewBoxAttrs = [0, 0, svgWidth, svgHeight]
+      let viewBoxStr = viewBoxAttrs.join(" ")
+      this.svgViewBoxAttr = viewBoxStr
+    },
     //  调整层次结构可视化形式的位置
     adjustTreePos: function() {
       let currentRootGId = this.treeGId
       let treeViewPosLenObj = this.treeViewPosLenObj
       //  调整视图的位置
       d3.select('#' + currentRootGId)
-        .transition()
-        .duration(this.POSITION_DURATION)
+        // .transition()
+        // .duration(this.POSITION_DURATION)
         .attr('transform', 'translate(' + treeViewPosLenObj.x + ',' + treeViewPosLenObj.y + ')')
     }, 
     /**
@@ -254,7 +266,7 @@ export default {
       let self = this
       //  在svg上增加背景矩形
       //  svg上的背景矩形的width与height的比例
-      let widthHeightRatio = 0.668
+      let widthHeightRatio = 1
       let miniPadding = 0.1
       this.viewWidth = $('#' + this.treeCanvasSvgId).width()
       this.viewHeight = $('#' + this.treeCanvasSvgId).height()
@@ -299,10 +311,12 @@ export default {
             .attr('height', canvasOuterPosLenObj.height)
       }
       //  计算内部的可视化形式的大小
-      this.treeViewPaddingTop = this.treeHeight * 0
-      this.treeViewPaddingBottom = this.treeHeight * 0
-      this.treeViewPaddingLeft = this.treeWidth * 0
-      this.treeViewPaddingRight = this.treeWidth * 0
+      // TODO, official version is 0.08
+      let paddingRatio = 0.01
+      this.treeViewPaddingTop = this.treeHeight * paddingRatio
+      this.treeViewPaddingBottom = this.treeHeight * paddingRatio
+      this.treeViewPaddingLeft = this.treeWidth * paddingRatio
+      this.treeViewPaddingRight = this.treeWidth * paddingRatio
       this.treeViewWidth = this.treeWidth - this.treeViewPaddingLeft - this.treeViewPaddingRight
       this.treeViewHeight = this.treeHeight - this.treeViewPaddingTop - this.treeViewPaddingBottom
       //  树可视化形式的boundingBox的位置以及长度的属性信息
@@ -449,6 +463,44 @@ export default {
           return treeViewPosLenObjY + d * treeViewPosLenObjHeight
         })
     },
+    /**
+     * [clear the canvas of the GoTree rendering results]
+     * @return {[Null]} [description]
+     */
+    clearTreeCanvas: function() {
+      let self = this
+      let currentRootGId = self.treeGId
+      d3.select('#' + currentRootGId)
+        .selectAll('*')
+        .remove()
+    },
+    //  渲染节点之间的连边
+    appendTreeLink: function(linkDataArray) {
+      let self = this
+      let currentRootGId = self.treeGId
+      //绘制link
+      let linkElements = d3.select('#' + currentRootGId)
+        .selectAll('.link')
+        .data(linkDataArray.filter(function(d){
+          return ((typeof(d.pathAttr) !== 'undefined') && (d.pathAttr.indexOf('NaN') === -1))
+        }))
+      //  增加视觉元素
+      linkElements.enter()
+        .append('path')
+        .attr('id', function(d, i) {
+          return 'link' + d.beginid + 'to' + d.endid
+        })
+        .attr('class', function(d, i) {
+          return 'link' + ' link-parent-' + d.beginid + ' link-child-' + d.endid
+        })
+        .attr('d', function(d, i){
+          return d.pathAttr
+        })
+        .attr('stroke-width', function(d, i) {
+          return d.link_width
+        })
+        .attr('fill', 'none')
+    },
     //  渲染节点之间的link
     renderTreeLink: function (linkDataArray) {
       let self = this
@@ -509,6 +561,15 @@ export default {
               return d.link_width
             })
         })
+        // 全部变化完成之后，删除全部的linearnode节点，重新绘制，保证节点是在最上方的 
+        if (self.linkDisplayTop) { 
+          //  when display the tree nodes on the top
+          setTimeout(function() {
+            d3.select('#' + currentRootGId).selectAll('.link') .remove()
+            // 先删除节点，然后增加节点
+            self.appendTreeLink(linkDataArray)
+          }, 200) 
+        } 
       }
       //  判断fromLinkArray与toLinkArray中的对象是否是null
       if ((fromLinkArray.length > 0) && (toLinkArray.length > 0)) {
@@ -549,7 +610,7 @@ export default {
         .attr('d', function(d, i) {
           return d.element
         })
-        .on("mousemove", this.mousemove)
+        .on("mousemove",this.mousemove)
         .on("mouseover",this.mouseover)
         .on("mouseout",this.mouseout)
         .on("click", function(d, i) {
@@ -614,6 +675,16 @@ export default {
       let nodeArray = self.nodeArray
       let currentRootGId = self.treeGId
       let treelayout = this.layouts
+      //  not valid -> stop rendering and remove all the nodes
+      if (!treeNodeValidate(areaDataArray)) {
+        d3.select(this.$el)
+          .select('#' + currentRootGId)
+          .selectAll('.lineartree-node-g')
+          .remove()
+        let message = "The element of tree node is none. | TreeCanvas.js"
+        throwGoTreeError(message)
+        return
+      } 
       //  表示节点的视觉元素
       let treeNodeElementG = d3.select(this.$el)
         .select('#' + currentRootGId)
@@ -636,7 +707,7 @@ export default {
         .attr('d', function(d, i) {
           return d.element
         })
-        .on("mousemove", this.mousemove)
+        .on("mousemove",this.mousemove)
         .on("mouseover",this.mouseover)
         .on("mouseout",this.mouseout)
         .on("click", function(d, i) {
@@ -699,15 +770,17 @@ export default {
       let pathArray = []
       treeNodeElementG.each(function(d, i) {
           let targetAnimationPath = d.element
-          let currentAnimationPath = d3.select(this).select('.lineartree-node').attr("d")
+          if (!d3.select(this).select('.lineartree-node').empty()) {
+            let currentAnimationPath = d3.select(this).select('.lineartree-node').attr("d")
+            fromArray.push(currentAnimationPath)
+          }
           pathArray.push(d3.select(this).select('.lineartree-node').node())
-          fromArray.push(currentAnimationPath)
           toArray.push(targetAnimationPath)
           //  除path之外的其他的style的动画过渡
           d3.select(this)
             .select('.lineartree-node')
-            .transition()
-            .duration(self.DURATION)
+            // .transition()
+            // .duration(self.DURATION)
             .attr('fill', function (d) {
               return d.node_color
             })
@@ -716,8 +789,8 @@ export default {
             })
             .style("opacity",1)
           d3.select(this)
-            .transition()
-            .duration(self.DURATION)
+            // .transition()
+            // .duration(self.DURATION)
             .select('.label-curve')
             .attr("d", function(d) {
               return d.labelPath
@@ -726,8 +799,8 @@ export default {
           d3.select(this)
             .select('.node-label')
             .select('textPath')
-            .transition()
-            .duration(self.DURATION)
+            // .transition()
+            // .duration(self.DURATION)
             .attr("xlink:href", function(d, i) {
               return "#curve-" + d.id
             })
@@ -757,14 +830,16 @@ export default {
               .attr('d', targetPath)
         })
         // 全部变化完成之后，删除全部的linearnode节点，重新绘制，保证节点是在最上方的 
-        setTimeout(function() {
-          d3.select('#' + currentRootGId).selectAll('.lineartree-node-g') .remove()
-          // 先删除节点，然后增加节点
-          self.appendTreeNode(areaDataArray)
-          if ((typeof(self.previewTreeObj) !== 'undefined') && (self.previewTreeObj != null)) {
-            self.highlightFocusedTreeObjIdArray(self.previewTreeObj)              
-          }
-        }, 200)        
+        if (!self.linkDisplayTop) { //  when display the tree nodes on the top
+          setTimeout(function() {
+            d3.select('#' + currentRootGId).selectAll('.lineartree-node-g') .remove()
+            // 先删除节点，然后增加节点
+            self.appendTreeNode(areaDataArray)
+            if ((typeof(self.previewTreeObj) !== 'undefined') && (self.previewTreeObj != null)) {
+              self.highlightFocusedTreeObjIdArray(self.previewTreeObj)              
+            }
+          }, 200) 
+        }       
       }
       if ((fromArray.length > 0) && (toArray.length > 0)) {
         if ((fromArray.length === toArray.length) && (fromArray[0] != null) && (toArray[0] != null) && 
@@ -1000,8 +1075,10 @@ export default {
       //  该节点的父亲节点，需要获取该节点的id，计算该计算的属性值
       //  更新当前点击的层次结构数据
       let areaDataArray = self.areaDataArray
-      let previewAllDataObj = JSON.parse(JSON.stringify(areaDataArray[0].data))
-      self.UPDATE_PREVIEW_TREE_OBJ(previewAllDataObj)
+      if (areaDataArray.length > 0) {
+        let previewAllDataObj = JSON.parse(JSON.stringify(areaDataArray[0].data))
+        self.UPDATE_PREVIEW_TREE_OBJ(previewAllDataObj)
+      }
     },
     /**
      * 渲染最终的树可视化形式的方法，需要保证这个方法中只能绘制单纯的树可视化形式，而不包括其他的部分，这样可以将GoTree实现为一个library
@@ -1042,10 +1119,19 @@ export default {
         linkDataArray = getTreeLinkStyle(linkDataArray, AreaData, dslContentObjectWithDefault, treeIndexWithDSL, nodeArray, this.treeViewWidth, this.treeViewHeight)
         this.areaDataArray = areaDataArray
         this.linkDataArray = linkDataArray
-        //  调用绘制节点之间链接边的方法
-        self.renderTreeLink(linkDataArray)
+        /**
+         * 绘制节点之间的连接边的方法
+         */
         //  调用绘制树可视化上节点
-        self.renderTreeNode(areaDataArray)
+        if (this.linkDisplayTop) {
+          //  render nodes at first and then render links between nodes
+          self.renderTreeNode(areaDataArray)
+          self.renderTreeLink(linkDataArray)
+        } else {
+          //  render links at first and then render nodes
+          self.renderTreeLink(linkDataArray) 
+          self.renderTreeNode(areaDataArray)      
+        }
     },
     //  提取传递的treeDsl的文件
     extractDSLContentObject: function () {
@@ -1226,6 +1312,14 @@ export default {
           .attr('height', h)
       }
     },
+    //  展示message的信息
+    showHintMessage: function(message, type) {
+      this.$message({
+        showClose: true,
+        message: message,
+        type: type
+      });
+    },
     // ZWT ADD END
     ...mapMutations([
       'UPDATE_TREE_DSL_ARRAY_KEY',
@@ -1300,7 +1394,7 @@ export default {
   .tree-canvas {
     .canvas-region-outer{
       fill: #fff;
-      stroke: #9e9e9e;
+      // stroke: #9e9e9e;
       stroke-width: 0.05rem;
     }
     .mark-line {
@@ -1365,7 +1459,7 @@ export default {
       top: 0%;
       height: 100%;
       width: 100%;
-      background: #f2f2f2;
+      // background: #f2f2f2;
       touch-action: pinch-zoom;
     }
   }

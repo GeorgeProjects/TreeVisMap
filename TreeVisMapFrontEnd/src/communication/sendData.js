@@ -103,3 +103,19 @@ export function queryTemplate (formData, queryTemplateCallback, queryTemplateDef
      	queryTemplateCallback(res.data, queryTemplateDefer)
     })
 }
+
+export function getGoTreeGrammarObj (formData, queryGoTreeGrammarCallback) {
+    console.log('formData', formData)
+    axios({
+      methods: 'get',
+      url: '/template/query',
+      params: formData,
+      timeout: 10000
+    })
+    .then((res) => {
+      let dslObj = res['data']
+      let dslName = formData['dslName']
+      queryGoTreeGrammarCallback(dslObj, dslName)
+      // queryGoTreeGrammarCallback(res.data, queryTemplateDefer)
+    })
+}

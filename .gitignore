@@ -2,6 +2,8 @@
 TreeVisMapFrontEnd/node_modules/
 !TreeVisMapFrontEnd/node_modules/jsoneditor/
 TreeVisMapBackEnd/node_modules
+TreeVisMapBackEnd/routes/template/0/*
+
 TreeVisMapFrontEnd/public/test
 TreeVisMapFrontEnd/public/test_1
 TreeVisMapFrontEnd/public/test0314

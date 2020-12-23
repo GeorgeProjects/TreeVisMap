@@ -16,11 +16,6 @@
             <i class="icon iconfont icon-data"></i>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip class='labelIcon' key="treedsl" content="tree template dialog" effect="light">
-          <el-menu-item @click="handleClickTemplateIcon" index="treedsl">
-            <i class="icon iconfont icon-treedsl"></i>
-          </el-menu-item>
-        </el-tooltip>
         <el-tooltip class='labelIcon' key="export" content="export option dialog" effect="light">
           <el-menu-item @click="exportDialogVisible=true" index="export">
             <i class="icon iconfont icon-export"></i>
@@ -69,15 +64,9 @@
     <el-dialog title="Dataset" id="dataset-dialog" :visible.sync="dataDialogVisible">
       <DataDialog
         :dataDialogKey="dataDialogKey"
-        @updateSelectedTreeDateName="updateSelectedTreeDateName"
+        @updateSelectedTreeDatasetName="updateSelectedTreeDatasetName"
         @closeDataDialog="closeDataDialog">
       </DataDialog>
-    </el-dialog>
-    <!--tree dsl dialog-->
-    <el-dialog title="Tree Template" id="treedsl-dialog" :visible.sync="treedslDialogVisible">
-      <TreedslDialog 
-        :treedslDialogUpdate="treedslDialogUpdate" 
-        :updateCurrentTreeDSLIndex="updateCurrentTreeDSLIndex"/>
     </el-dialog>
     <!--export dialog-->
     <el-dialog title="Export" id="export-dialog" :destroy-on-close="true" :visible.sync="exportDialogVisible">
@@ -87,7 +76,6 @@
 </template>
 
 <script>
-  
 import TreeVisMap from './views/TreeVisMapView/TreeVisMap.vue'
 import TreeVisMapTitle from './views/TreeVisMapView/TreeVisMapTitle.vue'
 import DataView from './views/Components/DataView.vue'
@@ -127,7 +115,6 @@ export default {
       activeIndex: null,
       componentKey: 0,
       dataDialogVisible: false,
-      treedslDialogVisible: false,
       exportDialogVisible: false,
       loading: true,
       loadingData: true,
@@ -135,9 +122,9 @@ export default {
       OPEN_PREVIEW_PANEL_DURATION: 1000,
       userInfoDialogKey: 0,
       dataDialogKey: 0,
-      treedslDialogUpdate: 1,
+      // treedslDialogUpdate: 1,
       dslNameIndex: 0,
-      maxDslAmountIndex: 200
+      maxDslAmountIndex: 5 // TODO 200
     }
   },
   created: function() {
@@ -149,10 +136,8 @@ export default {
     window.sysDatasetObj = new Dataset()
     let treeUnitDataDeferObj = $.Deferred(), treeDataDeferObj = $.Deferred(),
       treeDSLDeferObj = $.Deferred()
-      // templateDeferObj = $.Deferred(),
-    // self.loading = false
-    // self.loadingData = false
-    // self.loadingView = false
+    // after loading treeunit data, original hierarchical data, and tree declarative language,
+    // start compute the layout of tree visualizations
     $.when(treeUnitDataDeferObj, treeDataDeferObj, treeDSLDeferObj).then(async() => {
         self.loading = false
         self.loadingData = false
@@ -160,33 +145,8 @@ export default {
         const length = maxDslAmountIndex - self.dslNameIndex;
         while (self.dslNameIndex < maxDslAmountIndex) {
           let result = await self.setTreeDSLContent_Render_Download(self.dslNameIndex);
-          console.log('result', result)
-          // result.then((i) => {
-          //   console.log('i', i)
-          // })
           self.dslNameIndex = self.dslNameIndex + 1
         }
-        console.log(self.computeNodeDistance(length));
-        console.log('this will print last');
-
-        let p1 = new Promise((res, rej) => {
-            // setTimeout(() => {
-            console.log('p1')
-            // }, 1000);
-            res('p11')
-         })
-        p1.then((d) => {
-          console.log(d)
-        })
-        let p2 = new Promise((res, rej) => {
-            // setTimeout(() => {
-            console.log('p2')
-            // }, 1000);
-            res('p22')
-         });
-        p2.then((d) => {
-          console.log(d)
-        })
       })
     //  加载TreeUnit的数据
     let treeUnitDateset = 'treeunit.json'
@@ -249,11 +209,6 @@ export default {
       return 'icon-' + operation
     },
     onShow() {},
-    updateCurrentTreeDSLIndex: function(exampleName) {
-      this.dslNameIndex = exampleName
-      this.setTreeDSLContent_Render_Download(exampleName)
-      console.log('exampleName', exampleName)
-    },
     computeAllNodeTreeIndexWithDSL: function(nodeArrayWithValueObj, dslNameIndex) {
       let treeIndexWithDSL = {}
       for (let item in nodeArrayWithValueObj) {
@@ -262,41 +217,32 @@ export default {
       return treeIndexWithDSL
     },
     setTreeDSLContent_Render_Download: function(dslNameIndex) {
-      console.log('run setTreeDSLContent_Render_Download')
+      let self = this
+      //  add new tree visualization layout into the position array
+      function appendTreeVisResults2PositionArray(treeLayout) {
+        self.positionArray.push(treeLayout)
+      }
       return new Promise((res, rej) => {
-        console.log('run setTreeDSLContent_Render_Download promise')
-        // setTimeout(() => {
-        console.log('run setTreeDSLContent_Render_Download promise set_timeout')
         let layoutParas = sysDatasetObj.getLayoutParas()
         let nodeArrayWithValueObj = sysDatasetObj.getNodeArrayWithValueObj()
         let treeIndexWithDSL = this.computeAllNodeTreeIndexWithDSL(nodeArrayWithValueObj, dslNameIndex)
         layoutParas.treeIndexWithDSL = treeIndexWithDSL
         layoutParas.treeDSLContentObj = this.getTreeDSLContentObj(treeIndexWithDSL)
-        // setTimeout(function() {
-          // this.UPDATE_TREE_CANVAS_LAYOUT_STATE()
-          this.computeAreaDataObj(this)
-          // res()
-          // rej('failed')
-          // setTimeout(function() {
-          //   self.save_as_png()
-          // }, 100)
-        // }, 3000)
-        // }, 1000);
-        res(10000)
+        this.computeAreaDataObj(layoutParas, appendTreeVisResults2PositionArray)
       });
     },
-    //  计算树可视化的对象所占据的区域
-    computeAreaDataObj: function(self) {
-      let layoutParas = sysDatasetObj.getLayoutParas()
+    //  compute the tree visualization layout according to the layout params
+    computeAreaDataObj: function(layoutParas, appendTreeVisResults) {
       let nodeArray = sysDatasetObj.getNodeArray()
       let assignedAllNodesBoolean = assignedAllNodes(nodeArray, layoutParas.treeIndexWithDSL)
       if (assignedAllNodesBoolean) {
         getLayoutValue(layoutParas).then(function(treeLayout) {
-          self.positionArray.push(renderTreeVisResults(treeLayout))
+          let treeVisResults = computeTreeVisResults(treeLayout)
+          appendTreeVisResults(treeVisResults)
         })
       }
-      //  计算树可视化结果中的节点位置的布局
-      function renderTreeVisResults (treelayout) {
+      //  compute the tree visualization layout
+      function computeTreeVisResults (treelayout) {
         let nodeArray = sysDatasetObj.getNodeArray()
         let layoutParas = sysDatasetObj.getLayoutParas()
         let treeIndexWithDSL = layoutParas.treeIndexWithDSL
@@ -309,7 +255,7 @@ export default {
         let [areaDataArray, linkDataArray] = getNodeLinkAttr(areaData, dslContentObjectWithDefault, treeIndexWithDSL, treeViewPosLenObj, nodeArray)
         return areaDataArray
       }
-      //  是否在DSL中指定了全部节点
+      //  compute whether assign the dsl for all nodes in the hiearchical data
       function assignedAllNodes(nodeArray, treeIndexWithDSL) {
         let nodeIndexArray = []
         for(let i = 0;i < nodeArray.length;i++) {
@@ -326,6 +272,7 @@ export default {
         return false
       }
     },
+    // compute the node distance among different tree visualizations
     computeNodeDistance: function(length) {
       let distanceArray = []
       console.log(length)
@@ -361,16 +308,13 @@ export default {
       this.dataDialogVisible = true
       this.dataDialogKey = (this.dataDialogKey + 1) % 2
     },
-    handleClickTemplateIcon: function() {
-      this.treedslDialogVisible = true
-      this.treedslDialogUpdate = (this.treedslDialogUpdate + 1) % 2
-    },
     promptMessage: function(type, message) {
       this.$message({
         type: type,
         message: message
       })
     },
+    // integrate different declarative language objects into one treeDSLcontentObj
     getTreeDSLContentObj: function(treeIndexWithDSL) {
       let treeDSLContentObj = {}
       for(let item in treeIndexWithDSL) {
@@ -379,36 +323,17 @@ export default {
       }
       return treeDSLContentObj
     },
-    // closeDataView: function() {
-    //   let self = this
-    //   let duration = self.OPEN_PREVIEW_PANEL_DURATION
-    //   let subtreePreviewPanelWidth = $('#original-data-view').width() 
-    //   $('#treecanvas-content-view').animate({
-    //       left: '-=' + subtreePreviewPanelWidth,
-    //   }, duration, function () {
-    //     self.treeCanvasKey = (self.treeCanvasKey + 1) % 2
-    //   })
-    // },
-    // openDataView: function() {
-    //   let self = this
-    //   let duration = self.OPEN_PREVIEW_PANEL_DURATION
-    //   let subtreePreviewPanelWidth = $('#original-data-view').width() 
-    //   $('#treecanvas-content-view').animate({
-    //       left: '+=' + subtreePreviewPanelWidth,
-    //   }, duration, function () {
-    //     self.treeCanvasKey = (self.treeCanvasKey + 1) % 2
-    //   })
-    // },
-    //  更新选择的层次结构数据
-    updateSelectedTreeDateName: function(selectedFileName) {
+    //  update name of the selected dataset
+    //  update the selected hierarchical dataset in this function
+    updateSelectedTreeDatasetName: function(selectedFileName) {
       let self = this
       self.updateSelectedHierarchicalData(selectedFileName)
     },
-    //  更新数据对话框的可见性
+    //  close the data dialog
     closeDataDialog: function() {
       this.dataDialogVisible = false
     },
-    //  更新当前选择的层次结构数据
+    //  update the selected hierarchical dataset in this function
     updateSelectedHierarchicalData: function(selectedTreeDataName) {
       let self = this
       sysDatasetObj.updateDataset(selectedTreeDataName)
@@ -417,11 +342,11 @@ export default {
       self.UPDATE_ATTR_OBJ_ARRAY(attrObjArray)
       self.UPDATE_FOCUS_TREE_OBJ_ARRAY(allTreeObjIdArray)
       self.UPDATE_SELECTED_DATASET(selectedTreeDataName)
-      //  更新了层次结构数据之后需要对应地更新TreeIndexWithDsl对象
+      //  update TreeIndexWithDsl object correspondingly after updating hierarchical data 
       self.updateLayoutParas()
       let layoutParas = sysDatasetObj.getLayoutParas()
-      //  直接计算TreeCanvas的层次结构数据进行更新
-      this.UPDATE_TREE_CANVAS_LAYOUT_STATE()
+      // //  直接计算TreeCanvas的层次结构数据进行更新
+      // this.UPDATE_TREE_CANVAS_LAYOUT_STATE()
     },
     //  更新布局的参数
     updateLayoutParas: function() {
@@ -449,16 +374,13 @@ export default {
       } 
     },
     computeTreeIndexWithDSL: function() {
-      console.log('this.treeTemplateObj', this.treeTemplateObj)
       let templates = this.treeTemplateObj.templates
       let nodeArrayWithValueObj = sysDatasetObj.getNodeArrayWithValueObj()
       let treeIndexWithDSL = {}
       for (let i = 0;i < templates.length;i++) {
         let templateObj = templates[i]
         let queryObject = templateObj.query
-        console.log('queryObject', queryObject, 'nodeArrayWithValueObj', nodeArrayWithValueObj)
         let nodeIdArray = this.getQueryNodeIdArray(queryObject, nodeArrayWithValueObj)
-        console.log('nodeIdArray', nodeIdArray)
         let recursiveMode = templateObj.recursive
         let focusedTreeObjIdArray = this.getFocusedTreeObjIdArray(nodeIdArray, recursiveMode, nodeArrayWithValueObj)
         let dslname = templateObj.dslname
@@ -611,7 +533,6 @@ export default {
   overflow-y: hidden;
   @menu-height: 2.5rem;
   @border-style: 0.05rem solid rgba(180, 180, 180, 0.3);
-  @title-border-style: 0.15rem solid rgba(255, 255, 255, 0.8);
   .iconfont {
     font-size: 1rem;
   }
@@ -703,7 +624,6 @@ export default {
               height: @tree_canvas_view_title-height;
               left: 0%;
               width: 100%;
-              // border-bottom: @title-border-style;
             }
             #tree-canvas-view-body {
               position: absolute;
@@ -714,6 +634,7 @@ export default {
               overflow: auto;
               display: flex;
               background: #f2f2f2;
+              border-top: @border-style;
                 #original-data-view {
                   position: absolute;
                   height: auto;

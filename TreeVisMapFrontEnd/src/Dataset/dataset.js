@@ -1,4 +1,6 @@
 import { addDslDefaultSetting } from '@/dsl-processing/add_dsl_default_setting.js'
+import { getGoTreeGrammarObj } from '@/communication/sendData.js'
+import { queryTemplate } from '@/communication/sendData.js'
 
 export function Dataset () {
 	this.originalTreeDataStr = null
@@ -58,6 +60,14 @@ Dataset.prototype = {
 		}
 		return nodeArrayWithValueObj
 	},
+    //  assign all nodes within nodeArrayWithValueObj as dslNameIndex, and return treeIndexWithDSL object
+    computeAllNodeTreeIndexWithDSL: function(nodeArrayWithValueObj, dslNameIndex) {
+      let treeIndexWithDSL = {}
+      for (let item in nodeArrayWithValueObj) {
+        treeIndexWithDSL[item] = dslNameIndex
+      }
+      return treeIndexWithDSL
+    },
 	getNodeArrayWithValueObj: function() {
 		return this.nodeArrayWithValueObj
 	},
@@ -102,6 +112,48 @@ Dataset.prototype = {
 		//	更新具有属性值的节点数组
 		this.treeUnitNodeArrayWithValue = this.computeNodeArray(originalTreeUnitData)
 	},
+    //  get the TreeDSLContentObj according to the treeIndexWithDSL object
+    getTreeDSLContentObj: function(treeIndexWithDSL) {
+        let treeDSLContentObj = {}
+        for(let item in treeIndexWithDSL) {
+           let dslName = treeIndexWithDSL[item]
+           treeDSLContentObj[dslName] = this.getTreeDSLObject(dslName)
+        }
+        return treeDSLContentObj
+    },
+    //
+    loadTreeDSLContentObjFromServer: function(treeIndexWithDSL, loadDataCallBack) {
+        let treeDSLContentObj = {}
+        let deferObjArray = []
+        let index = 0
+        // the matching relationship between dsl name and dsl index
+        let deferObjDic = {}
+        let treeDSLList = []
+        for (let item in treeIndexWithDSL) {
+            if (treeDSLList.indexOf(treeIndexWithDSL[item]) === -1) {
+                treeDSLList.push(treeIndexWithDSL[item])
+            }
+        }
+        for(let i = 0;i < treeDSLList.length; i++) {
+            let dslName = treeDSLList[i]
+            deferObjArray.push($.Deferred())
+        }
+        $.when(...deferObjArray).then(function() {
+            loadDataCallBack(treeDSLContentObj)
+        })
+        for(let i = 0;i < treeDSLList.length; i++) {
+            let dslName = treeDSLList[i]
+            if (typeof(treeDSLContentObj[dslName]) !== 'undefined') {
+                deferObjArray[i].resolve()
+            } else {
+                this.loadTreeDSLObject(dslName, function(singleTreeDSLObj, dslName) {
+                   treeDSLContentObj[dslName] = singleTreeDSLObj
+                   let dslIndex = treeDSLList.indexOf(dslName)
+                   deferObjArray[dslIndex].resolve()
+                })
+            }
+        }
+    },
 	getTreeDataset: function() {
 		let self = this
 		let treeDataset = {}
@@ -121,8 +173,14 @@ Dataset.prototype = {
 	getTreeUnitDataset: function() {
 		return this.originalTreeUnitData
 	},
+    loadTreeDSLObject: function(dslName, callbackFunc) {
+        let formData = {'dslName': dslName}
+        getGoTreeGrammarObj(formData, callbackFunc)
+    },
 	getTreeDSLObject: function(dslName) {
-		return this.selectedDSLObject[dslName]
+        if (dslName in this.selectedDSLObject) {
+            return this.selectedDSLObject[dslName]
+        } 
 	},
 	getNodeArray: function() {
 		return this.nodeArrayWithValue
@@ -265,7 +323,7 @@ Dataset.prototype = {
 		if (typeof(this.selectedDSLObject[dslName]) === 'undefined') {
 			return false
 		} else {
-			return true
+            return true
 		}
 	},
 	//  提取全部的属性名称
@@ -293,21 +351,22 @@ Dataset.prototype = {
           attrType: 'string'
         }
       ]
-      for (let attrName in hierarchicalData) {
-        if ((attrName !== 'children') && (attrName !== 'index')) {
-          let value = hierarchicalData[attrName]
-          let attrType = typeof(value)
-          if (attrType !== 'object') {
-          	if (attrObjArray.map(function(e) { return e.attrName; }).indexOf(attrName) === -1) {
-	          	attrObjArray.push({
-		           attrName: attrName,
-		           attrType: attrType
-		        })
-	        }
-          }
+      // TODO
+      // for (let attrName in hierarchicalData) {
+      //   if ((attrName !== 'children') && (attrName !== 'index')) {
+      //     let value = hierarchicalData[attrName]
+      //     let attrType = typeof(value)
+      //     if (attrType !== 'object') {
+      //     	if (attrObjArray.map(function(e) { return e.attrName; }).indexOf(attrName) === -1) {
+	     //      	attrObjArray.push({
+		    //        attrName: attrName,
+		    //        attrType: attrType
+		    //     })
+	     //    }
+      //     }
           
-        }
-      }
+      //   }
+      // }
       return attrObjArray
     },
     //	根据文件名获取数据对象
@@ -498,5 +557,29 @@ Dataset.prototype = {
     		}
     	}
     	return treeUnitDSLArray
-	}
+	},
+    /**
+     * [judge whether the link should diaply on the top]
+     * @param  {[type]}  dslContentObject [description]
+     * @return {Boolean}                  [description]
+     */
+    getLinkDisplayTop: function(dslContentObject) {
+      let linkDisplayTop = true
+      for (let dslName in dslContentObject) {
+        let dslObjElement = dslContentObject[dslName].Element
+        if (dslObjElement.Link == 'hidden') {
+          linkDisplayTop = false
+          continue
+        } 
+        if (dslObjElement.LinkDisplay == 'bottom') {
+          linkDisplayTop = false
+          continue
+        }
+        if (typeof(dslObjElement.LinkDisplay) === 'undefined') {
+          linkDisplayTop = false
+          continue
+        }
+      }
+      return linkDisplayTop
+    }
 }

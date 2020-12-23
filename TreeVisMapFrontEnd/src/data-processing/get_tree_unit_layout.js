@@ -351,32 +351,6 @@ export function getTreeUnitLayout (treeIndexWithDSL, dslContentObject, treelayou
               )
             }
           }
-  
-  
-  
-          // if (j > 0) {
-          //   let preSonId = treelayout[nodeId].subtreeLayout[j - 1].id
-          //   if (dsl.Layout.X.Subtree.Relation === 'flatten') {
-          //     currentNode.others.X.SubtreeMargin.push(
-          //         RectArea(AreaData[preSonId].x + AreaData[preSonId].Width,
-          //           currentNode.SubtreesY,
-          //           AreaData[SonID].x,
-          //           currentNode.SubtreesY + currentNode.SubtreesHeight)
-          //       )
-          //   }
-            
-  
-          //   if (dsl.Layout.Y.Subtree.Relation === 'flatten') {
-          //     currentNode.others.Y.SubtreeMargin.push(
-          //         RectArea(currentNode.SubtreesX,
-          //           AreaData[preSonId].y + AreaData[preSonId].Height,
-          //           currentNode.SubtreesX + currentNode.SubtreesWidth,
-          //           AreaData[SonID].y)
-                    
-          //       )
-          //   }
-            
-          // }
       }
     }
 

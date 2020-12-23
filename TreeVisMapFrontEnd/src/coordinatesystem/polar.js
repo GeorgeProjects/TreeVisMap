@@ -122,6 +122,24 @@ Polar.prototype = {
           .padRadius(0)
       return rectPathObj()
   },
+  //  计算极坐标系下的位置
+  calPolarPosition: function(nodeObj) {
+    let angleScale = this.angleScale
+    let rScale = this.rScale
+    if (this.polarAxis === 'y-axis') {
+      //  计算极坐标系下的节点
+      let angle = angleScale(nodeObj.x) - Math.PI / 2
+      let radius = rScale(nodeObj.y)
+      let polarPoint = {angle: angle, radius: radius}
+      return polarPoint
+    } else if (this.polarAxis === 'x-axis') {
+      //  计算极坐标系下的节点
+      let angle = angleScale(nodeObj.y) - Math.PI / 2
+      let radius = rScale(nodeObj.x)
+      let polarPoint = {angle: angle, radius: radius} 
+      return polarPoint
+    }
+  },
   //  给定一个笛卡尔坐标系下的位置计算极坐标系下的位置
   calPosition: function (nodeObj) {
       let angleScale = this.angleScale
