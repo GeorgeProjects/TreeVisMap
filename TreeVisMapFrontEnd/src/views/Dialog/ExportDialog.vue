@@ -100,7 +100,8 @@
 			    filename: this.getDownloadFileName()
 			}
 			$('#tree-dsl-svg-canvas #index-0-g').clone().appendTo($('#tree-dsl-svg-canvas-copy'));
-			d3_save_svg.save(d3.select('#tree-dsl-svg-canvas-copy').node(), config);
+			// let svgInfo = d3_save_svg.getSVG(d3.select('#tree-dsl-svg-canvas-copy').node(), config);
+            d3_save_svg.save(d3.select('#tree-dsl-svg-canvas-copy').node(), config);
 			setTimeout(function() {
 				$('#tree-dsl-svg-canvas-copy #index-0-g').remove();
 			}, 1000)

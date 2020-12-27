@@ -1,8 +1,9 @@
 .DS_Store
 TreeVisMapFrontEnd/node_modules/
 !TreeVisMapFrontEnd/node_modules/jsoneditor/
-TreeVisMapBackEnd/node_modules
-TreeVisMapBackEnd/routes/template/0/*
+TreeVisMapBackEnd-Node/node_modules
+TreeVisMapBackEnd/data/0/*
+TreeVisMapBackEnd/svg/0/*
 
 TreeVisMapFrontEnd/public/test
 TreeVisMapFrontEnd/public/test_1

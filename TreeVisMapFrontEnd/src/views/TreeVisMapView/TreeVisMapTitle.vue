@@ -4,6 +4,10 @@
     <span class = "operation">
       <span class = "mode-selection">
         <el-tooltip content="clear" placement="top">
+            <i class="el-icon-refresh" @click="switchView"></i>
+        </el-tooltip>         
+        <el-divider direction="vertical"></el-divider> 
+        <el-tooltip content="clear" placement="top">
             <span class="icon iconfont icon-qingchu" @click="clearCanvas"></span>
         </el-tooltip> 
         <el-divider direction="vertical"></el-divider> 
@@ -115,9 +119,6 @@
     </span>
   </div>
 </template>
-
-<!--                  -->
-
 <script> 
 import { mapState, mapMutations, mapActions } from 'vuex';
 import { getHierarchicalData, getHierarchicalDataWithIndex, getNodeArray } 
@@ -307,6 +308,10 @@ export default {
       layoutParas.treeIndexWithDSL = {}
       self.UPDATE_TREE_CANVAS_LAYOUT_STATE()
     },
+    switchView: function() {
+      let self = this
+      this.UPDATE_DISPLAYED_PANEL()
+    },
     // 初始化assemble对话框的参数设置
     initAssembleDialog: function() {
       if ((typeof(this.previewTreeObj) !== 'undefined') && (this.previewTreeObj != null)) {
@@ -372,8 +377,6 @@ export default {
     handleViewSelectionModeCommand: function(command) {
       this.UPDATE_VIEW_SELECTION_MODE(command)
     },
-    test: function() {
-    },
     //  iconClass
     iconClass: function(label) {
       let iconClass = "icon-" + label
@@ -418,7 +421,8 @@ export default {
       'UPDATE_DSLLIST_SELECTED_DSL_STATE',
       'UPDATE_TREE_UNIT_LAYOUT_STATE',
       'UPDATE_TREE_CANVAS_LAYOUT_STATE',
-      'UPDATE_TREE_PREVIEW_LAYOUT_STATE'
+      'UPDATE_TREE_PREVIEW_LAYOUT_STATE',
+      'UPDATE_DISPLAYED_PANEL'
     ]),
     //  使用mapMutation将数组中的action与其他的方法结合到一起      
     ...mapActions([

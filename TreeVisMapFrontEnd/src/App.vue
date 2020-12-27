@@ -21,12 +21,6 @@
             <i class="icon iconfont icon-export"></i>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip class='labelIcon' effect="light">
-          <el-menu-item id="login-icon">
-            <i class="icon iconfont icon-yonghu"></i>
-            GoTree template Index: {{ dslNameIndex }}
-          </el-menu-item>
-        </el-tooltip>
     </el-menu>
     <!--main view-->
     <div class = "content-container"
@@ -52,7 +46,10 @@
                 </TreeVisMapTitle>
               </div>
               <div id = "tree-canvas-view-body">  
-                <div id = "treecanvas-content-view">
+                <div id = "treecanvas-content-view" :class="{'hide': this.displayedPanel==='map'}">
+                  <TreeCanvas :treeCanvasKey="treeCanvasKey"></TreeCanvas>
+                </div>
+                <div id = "treemap-content-view" :class="{'hide': this.displayedPanel==='canvas'}">
                   <TreeVisMap :maxDslAmountIndex="maxDslAmountIndex" />
                 </div>
               </div>
@@ -84,6 +81,7 @@ import QueryView from './views/Components/QueryView.vue'
 import DataDialog from './views/Dialog/DataDialog.vue'
 import ExportDialog from './views/Dialog/ExportDialog.vue'
 import TreedslDialog from './views/Dialog/TreedslDialog.vue'
+import TreeCanvas from './views/TreeCanvasView/TreeCanvas.vue'
 import { getHierarchicalData } from '@/data-processing/get_hierarchical_data.js'
 import { getHierarchicalDSL } from '@/data-processing/get_hierarchical_dsl.js'
 import { getTreeDataInfo } from '@/data-processing/get_tree_data_info.js'
@@ -104,7 +102,7 @@ export default {
   components: {
     DataDialog, ExportDialog, TreedslDialog,
     DataView, TopologyView, QueryView, 
-    TreeVisMap, TreeVisMapTitle
+    TreeVisMap, TreeVisMapTitle, TreeCanvas
   },
   data() {
     return {
@@ -124,7 +122,13 @@ export default {
       dataDialogKey: 0,
       // treedslDialogUpdate: 1,
       dslNameIndex: 0,
-      maxDslAmountIndex: 5 // TODO 200
+      maxDslAmountIndex: 5, // TODO 200
+      treeCanvasKey: 0
+    }
+  },
+  watch: {
+    displayedPanel: function() {
+      // this.treeCanvasKey = (this.treeCanvasKey + 1) % 2
     }
   },
   created: function() {
@@ -202,6 +206,7 @@ export default {
       'selectedDataset',
       'focusedTreeObjArray',
       'positionArray',
+      'displayedPanel',
     ])
   },
   methods: {
@@ -631,7 +636,7 @@ export default {
               left: 0%;
               top: @tree_canvas_view_title-height;
               bottom: 0%;
-              overflow: auto;
+              overflow: hidden;
               display: flex;
               background: #f2f2f2;
               border-top: @border-style;
@@ -651,11 +656,22 @@ export default {
                 }
                 #treecanvas-content-view {
                   position: absolute;
-                  height: auto;
                   right: 0%;
                   top: 0%;
                   bottom: 0%;
                   left: 0%;
+                  background-color: white;
+                }
+                #treemap-content-view {
+                  position: absolute;
+                  right: 0%;
+                  top: 0%;
+                  bottom: 0%;
+                  left: 0%;
+                  background-color: white;
+                }
+                .hide {
+                  opacity: 0;
                 }
             }
           }     

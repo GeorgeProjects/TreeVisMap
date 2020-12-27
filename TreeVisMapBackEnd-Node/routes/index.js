@@ -3,6 +3,7 @@ const users = require('./user');
 const template = require('./template')
 const dataset = require('./dataset')
 const api = require('./api')
+const results = require('./results')
 
 routes.get('/', (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -18,6 +19,7 @@ routes.post("/",function(req,res){
 });
 
 routes.use('/user', users);
+routes.use('/results', results);
 routes.use('/template', template);
 routes.use('/dataset', dataset);
 routes.use('/api', api);

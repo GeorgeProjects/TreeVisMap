@@ -46,9 +46,14 @@ export function getTreeLinkStyle(linkDataArray, AreaData, dslContentObject,
 			}
 			return (linkDSLObj.Element.StaticThickness / 2)
 		} else {
-			let maxWidth = 
-			linkDSLObj.Element.MaxThickness
+			let maxWidth = linkDSLObj.Element.MaxThickness
 			let minWidth = linkDSLObj.Element.MinThickness
+			if (typeof(maxWidth) === 'undefined') {
+				maxWidth = 10
+			}
+			if (typeof(minWidth) === 'undefined') {
+				minWidth = 1
+			}
 			let linkWidthRange = [maxWidth, minWidth]
 			let widthNumericalDomain = d3.extent(treeNodeArray, function(d, i){return +d.data[Thickness]})
 			widthLinearScaleController.domain(widthNumericalDomain).range(linkWidthRange)

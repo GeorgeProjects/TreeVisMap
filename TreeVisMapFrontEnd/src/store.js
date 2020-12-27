@@ -83,6 +83,8 @@ export default new Vuex.Store({
     //=========================
     //  记录一组树的节点位置，便于计算距离
     positionArray: [],
+    displayedPanel: 'map', // this state controls the displayed view, either vanvas or map
+    selectedTreeDSLIndex: 0,
   },
   mutations: {
     ['UPDATE_CURRENT_DARG_COMPONENT'] (state, currentDragComponent) {
@@ -279,6 +281,16 @@ export default new Vuex.Store({
     },
     ['UPDATE_COORD'] (state, coordComponent) {
       state.coordComponent = coordComponent
+    },
+    ['UPDATE_DISPLAYED_PANEL'] (state) {
+      if (state.displayedPanel === 'map') {
+        state.displayedPanel = 'canvas'
+      } else {
+        state.displayedPanel = 'map'
+      }
+    },
+    ['UPDATE_SELECTED_TREE_DSL_INDEX'] (state, selectedTreeDSLIndex) {
+      state.selectedTreeDSLIndex = selectedTreeDSLIndex
     }
   },
   actions: {

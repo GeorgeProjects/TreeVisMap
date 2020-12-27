@@ -576,7 +576,7 @@ Dataset.prototype = {
           continue
         }
         if (typeof(dslObjElement.LinkDisplay) === 'undefined') {
-          linkDisplayTop = false
+          linkDisplayTop = true
           continue
         }
       }

@@ -84,7 +84,7 @@ export function queryDataset (formData, queryDatasetCallback, queryDatasetDefer)
     axios({
       methods: 'get',
       url: '/dataset/query',
-      params: formData,
+      data: formData,
       timeout: 10000
     })
     .then((res) => {
@@ -105,7 +105,6 @@ export function queryTemplate (formData, queryTemplateCallback, queryTemplateDef
 }
 
 export function getGoTreeGrammarObj (formData, queryGoTreeGrammarCallback) {
-    console.log('formData', formData)
     axios({
       methods: 'get',
       url: '/template/query',
@@ -118,4 +117,14 @@ export function getGoTreeGrammarObj (formData, queryGoTreeGrammarCallback) {
       queryGoTreeGrammarCallback(dslObj, dslName)
       // queryGoTreeGrammarCallback(res.data, queryTemplateDefer)
     })
+}
+
+export function sendTreeVisSVG (formData, sendTreeVisSVGCallback) {
+    axios.post('/results/save', formData)
+    .then(function (response) {
+      console.log('finish', formData)
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
 }

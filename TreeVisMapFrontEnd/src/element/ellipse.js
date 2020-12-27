@@ -14,6 +14,7 @@ Ellipse.prototype = {
 	initBoundingBox: function() {
 		let boundingBox = {}
 		let nodeObj = this.nodeObj
+		console.log('nodeObj', nodeObj)
 		boundingBox['top'] = {'x': nodeObj.x + nodeObj.Rootx + nodeObj.RootWidth / 2, 'y': nodeObj.y + nodeObj.Rooty}
 		boundingBox['bottom'] = {'x': nodeObj.x + nodeObj.Rootx + nodeObj.RootWidth / 2, 'y': nodeObj.y + nodeObj.Rooty + nodeObj.RootHeight}
 		boundingBox['left'] = {'x': nodeObj.x + nodeObj.Rootx, 'y': nodeObj.y + nodeObj.Rooty + nodeObj.RootHeight / 2}
@@ -73,21 +74,21 @@ Ellipse.prototype = {
 		// compute the polar coordinate system
 		function getPolarCoord(polarCoordObj, subtreePos, point) {
 			let polarPoint = polarCoordObj.calPosition(point)
-			polarPoint['x'] = Math.round(polarPoint['x'] + subtreePos['x'])
-			polarPoint['y'] = Math.round(polarPoint['y'] + subtreePos['y'])
+			polarPoint['x'] = polarPoint['x'] + subtreePos['x']
+			polarPoint['y'] = polarPoint['y'] + subtreePos['y']
 			return polarPoint
 		}
 		//	compute distance
 		function getDistance(point1, point2) {
 			let sum = Math.pow((point1.x - point2.x), 2) + Math.pow((point1.y - point2.y), 2)
-			return Math.round(Math.sqrt(sum))
+			return Math.sqrt(sum)
 		}
 		//	compute angle
 		function getAngle(point1, point2) {
 			let diffx = point1.x - point2.x
 			let diffy = point1.y - point2.y
 			let _angle = Math.atan(diffy / diffx)
-			let angle = Math.round(_angle / Math.PI * 180) - 90
+			let angle = _angle / Math.PI * 180 - 90
 			return angle
 		}
 	}

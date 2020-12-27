@@ -7,16 +7,16 @@
 					:cx="singlePointPos[0]" 
 					:cy="singlePointPos[1]" 
 					:r="circleR"
-					@click="clickPoint(index)">
+					@click="updateSelectedTreeDSLContent(index)">
 			</circle>
 		</svg>
-      	<el-card
+<!--       	<el-card
         	id="tooltip"
         	v-show="isShowTooltip"
         	:style="'transform: translate(' + this.tooltipX + 'px,' + this.tooltipY + 'px);'">
         	<TreeCanvas :treeCanvasKey="treeCanvasKey">
         	</TreeCanvas>
-      	</el-card>
+      	</el-card> -->
 	</div>
 </template>
 <script>
@@ -25,6 +25,7 @@
 	import { getTSNEProjectionResult } from '@/data-processing/get_tsne_projection_result.js'
 	import { getProjectionResults } from '@/data-processing/get_projection_results.js'
 	import TreeCanvas from '@/views/TreeCanvasView/TreeCanvas.vue'
+	import d3_save_svg from 'd3-save-svg'
 
 	export default {
 		name: 'TreeVisMap',
@@ -60,7 +61,7 @@
 				tooltipTipWidth: 300,
 				tooltipTipHeight: 300, // it is used to set the position of tooltip
 				highlightNodeIndex: -1, // index of the highlighted nodes
-				treeCanvasKey: 0 // variable to update the tree visualization
+				treeCanvasKey: 0, // variable to update the tree visualization
 			}
 		},
 		watch: {},
@@ -80,20 +81,31 @@
       		// this.computeTreeDistance()
       		this.initPosScale()
       		this.loadProjectionResults()
+      		this.changeTreeVisResult()
 		},
 		computed: {
 		    ...mapState([
+		    	'selectedTreeDSLIndex'
 		    ])
 		},
 		methods: {
 			...mapMutations([
+				'UPDATE_SELECTED_TREE_DSL_INDEX'
 		    ]),
+		    changeTreeVisResult: function() {
+		    	let self = this
+		    	let updatedSelectedTreeDSLIndex = 192
+		    	self.updateSelectedTreeDSLContent(updatedSelectedTreeDSLIndex)
+		    	// setInterval(function() {
+		    	// 	let selectedTreeDSLIndex = self.selectedTreeDSLIndex
+		    	// 	let updatedSelectedTreeDSLIndex = selectedTreeDSLIndex + 1
+		    	// 	self.updateSelectedTreeDSLContent(updatedSelectedTreeDSLIndex)
+		    	// }, 4000);
+		    },
 		    initPosScale: function() {
       			// initialize the scale of vertical position and horizontal position
 		    	let treeVisMapCanvasWidth = this.treeVisMapCanvasWidth
 		    	let treeVisMapCanvasHeight = this.treeVisMapCanvasHeight
-		    	console.log('treeVisMapCanvasWidth', treeVisMapCanvasWidth)
-		    	console.log('treeVisMapCanvasHeight', treeVisMapCanvasHeight)
 		    	this.xScale = d3.scaleLinear()
 				  .domain([0, 1])
 				  .range([0, treeVisMapCanvasWidth])
@@ -152,20 +164,19 @@
 		    		this.isShowTooltip = true
 		    	}
 		    },
-		    clickPoint: function(dslNameIndex) {
+		    // updateSelectedTreeDSLContent: function (argument) {   	
+		    // },
+		    updateSelectedTreeDSLContent: function(selectedTreeDSLIndex) {
 		    	let self = this
-		    	console.log('dslNameIndex', dslNameIndex)
 		    	let layoutParas = sysDatasetObj.getLayoutParas()
-		    	console.log('layoutParas', layoutParas)
 				let nodeArrayWithValueObj = sysDatasetObj.getNodeArrayWithValueObj()
-				let treeIndexWithDSL = sysDatasetObj.computeAllNodeTreeIndexWithDSL(nodeArrayWithValueObj, dslNameIndex)
-				// set treeIndexWithDSL and treeDSLContentObj within layoutParas, 
-				// then rendering tree visualization result
+				let treeIndexWithDSL = sysDatasetObj.computeAllNodeTreeIndexWithDSL(nodeArrayWithValueObj, selectedTreeDSLIndex)
+				// set treeIndexWithDSL and treeDSLContentObj within layoutParas, then rendering tree visualization result
 				layoutParas.treeIndexWithDSL = treeIndexWithDSL
 				sysDatasetObj.loadTreeDSLContentObjFromServer(treeIndexWithDSL, function(treeDSLContentObj) {
-					console.log('treeDSLContentObj', treeDSLContentObj)
 					layoutParas.treeDSLContentObj = treeDSLContentObj
-					self.updateTooltipContent(dslNameIndex)
+					self.updateTooltipContent(selectedTreeDSLIndex)
+					self.UPDATE_SELECTED_TREE_DSL_INDEX(selectedTreeDSLIndex)
 				})
 		    },
 		    setTooltipPos: function(singlePointPos) {

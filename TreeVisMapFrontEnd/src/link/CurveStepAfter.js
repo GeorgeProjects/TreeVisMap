@@ -84,12 +84,12 @@ CurveStepAfter.prototype = {
     		// line to middlePoint [middlePoint.x, middlePoint.y]
     		// last arc to endPoint [endPos.x, endPos.y]
     		curveStepAfterPath.lineTo(middlePoint.x, middlePoint.y)
-    		if ((polarMiddlePoint.angle - polarEndPoint.angle > 0.001) && (polarMiddlePoint.radius > 0.001)) {
+    		if ((polarMiddlePoint.angle - polarEndPoint.angle > 0.001) && (polarEndPoint.radius > 0.001)) {
 				let pathDirection = true
-				curveStepAfterPath.arc(subtreePos.x, subtreePos.y, polarMiddlePoint.radius, polarMiddlePoint.angle, polarEndPoint.angle, pathDirection)
-			} else if ((polarMiddlePoint.angle - polarEndPoint.angle < -0.001) && (polarMiddlePoint.radius > 0.001)) {
+				curveStepAfterPath.arc(subtreePos.x, subtreePos.y, polarEndPoint.radius, polarMiddlePoint.angle, polarEndPoint.angle, pathDirection)
+			} else if ((polarMiddlePoint.angle - polarEndPoint.angle < -0.001) && (polarEndPoint.radius > 0.001)) {
 		    	let pathDirection = false
-				curveStepAfterPath.arc(subtreePos.x, subtreePos.y, polarMiddlePoint.radius, polarMiddlePoint.angle, polarEndPoint.angle, pathDirection)
+				curveStepAfterPath.arc(subtreePos.x, subtreePos.y, polarEndPoint.radius, polarMiddlePoint.angle, polarEndPoint.angle, pathDirection)
 			}
     	}
 		//	horizontal line first and next vertical line
