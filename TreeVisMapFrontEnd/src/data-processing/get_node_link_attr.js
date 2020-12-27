@@ -595,7 +595,8 @@ export function getNodeLinkAttr (areaData, dslContentObject, treeIndexWithDSL, t
             //  将极坐标轴建立在只有节点中心的部分
             //  只有节点之间的连接为先水平，然后竖直的情况下才会设定wholetreeDataRange
             if (beginID === 'index-0') {
-              return lineObject.generatePolarPath(currentNodeCoordinateSystemObj_layout, wholetreeDataRange)
+              // TODO fix the bug of of CurveStepAfter path
+              return lineObject.generatePolarPath(currentNodeCoordinateSystemObj_layout, subTreeData_layout)
             } 
           }
           return lineObject.generatePolarPath(currentNodeCoordinateSystemObj_layout, subTreeData_layout)
