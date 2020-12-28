@@ -14,7 +14,6 @@ Ellipse.prototype = {
 	initBoundingBox: function() {
 		let boundingBox = {}
 		let nodeObj = this.nodeObj
-		console.log('nodeObj', nodeObj)
 		boundingBox['top'] = {'x': nodeObj.x + nodeObj.Rootx + nodeObj.RootWidth / 2, 'y': nodeObj.y + nodeObj.Rooty}
 		boundingBox['bottom'] = {'x': nodeObj.x + nodeObj.Rootx + nodeObj.RootWidth / 2, 'y': nodeObj.y + nodeObj.Rooty + nodeObj.RootHeight}
 		boundingBox['left'] = {'x': nodeObj.x + nodeObj.Rootx, 'y': nodeObj.y + nodeObj.Rooty + nodeObj.RootHeight / 2}

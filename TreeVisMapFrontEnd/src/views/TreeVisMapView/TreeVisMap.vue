@@ -1,6 +1,6 @@
 <template>
 	<div class="tree-vis-map" :ref="treeVisMapContainerId" :id="treeVisMapContainerId">
-		<svg :id="treeVisMapCanvasId" v-if="finishComputeProjectionResult">
+		<!-- <svg :id="treeVisMapCanvasId" v-if="finishComputeProjectionResult">
 			<circle v-for="(singlePointPos, index) in projectionPosResults" 
 					class="treevis-node"
 					:class="{'selected': highlightNodeIndex==index}"
@@ -10,11 +10,11 @@
 					@click="updateSelectedTreeDSLContent(index)">
 			</circle>
 		</svg>
-<!--       	<el-card
+      	<el-card
         	id="tooltip"
-        	v-show="isShowTooltip"
+        	v-if="isShowTooltip"
         	:style="'transform: translate(' + this.tooltipX + 'px,' + this.tooltipY + 'px);'">
-        	<TreeCanvas :treeCanvasKey="treeCanvasKey">
+        	<TreeCanvas :treeCanvasKey="treeCanvasKey" :sendSVGData="false">
         	</TreeCanvas>
       	</el-card> -->
 	</div>
@@ -94,13 +94,11 @@
 		    ]),
 		    changeTreeVisResult: function() {
 		    	let self = this
-		    	let updatedSelectedTreeDSLIndex = 192
-		    	self.updateSelectedTreeDSLContent(updatedSelectedTreeDSLIndex)
-		    	// setInterval(function() {
-		    	// 	let selectedTreeDSLIndex = self.selectedTreeDSLIndex
-		    	// 	let updatedSelectedTreeDSLIndex = selectedTreeDSLIndex + 1
-		    	// 	self.updateSelectedTreeDSLContent(updatedSelectedTreeDSLIndex)
-		    	// }, 4000);
+		    	setInterval(function() {
+		    		let selectedTreeDSLIndex = self.selectedTreeDSLIndex
+		    		let updatedSelectedTreeDSLIndex = selectedTreeDSLIndex + 1
+		    		self.updateSelectedTreeDSLContent(updatedSelectedTreeDSLIndex)
+		    	}, 1000);
 		    },
 		    initPosScale: function() {
       			// initialize the scale of vertical position and horizontal position
@@ -164,8 +162,6 @@
 		    		this.isShowTooltip = true
 		    	}
 		    },
-		    // updateSelectedTreeDSLContent: function (argument) {   	
-		    // },
 		    updateSelectedTreeDSLContent: function(selectedTreeDSLIndex) {
 		    	let self = this
 		    	let layoutParas = sysDatasetObj.getLayoutParas()

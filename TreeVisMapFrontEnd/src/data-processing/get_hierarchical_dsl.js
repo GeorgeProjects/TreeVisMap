@@ -1,5 +1,6 @@
 //	导出层次结构数据
 export async function getHierarchicalDSL (fileNameArray, filePath) {
+	console.log('fileNameArray', fileNameArray, 'filePath', filePath)
 	if (typeof(filePath) === 'undefined') {
 		filePath = ""
 	}
@@ -11,5 +12,6 @@ export async function getHierarchicalDSL (fileNameArray, filePath) {
 		var treeDSLData = await d3.json('treeDSL/' + filePath + fileNameFull)
 		treeDSLDataCollection[fileName] = treeDSLData
 	}
+	console.log('treeDSLDataCollection', treeDSLDataCollection)
 	return treeDSLDataCollection
 }

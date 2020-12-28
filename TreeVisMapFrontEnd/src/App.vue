@@ -47,7 +47,7 @@
               </div>
               <div id = "tree-canvas-view-body">  
                 <div id = "treecanvas-content-view" :class="{'hide': this.displayedPanel==='map'}">
-                  <TreeCanvas :treeCanvasKey="treeCanvasKey"></TreeCanvas>
+                  <TreeCanvas :treeCanvasKey="treeCanvasKey" :sendSVGData="true"></TreeCanvas>
                 </div>
                 <div id = "treemap-content-view" :class="{'hide': this.displayedPanel==='canvas'}">
                   <TreeVisMap :maxDslAmountIndex="maxDslAmountIndex" />
@@ -138,20 +138,14 @@ export default {
     let self = this
     let maxDslAmountIndex = this.maxDslAmountIndex
     window.sysDatasetObj = new Dataset()
-    let treeUnitDataDeferObj = $.Deferred(), treeDataDeferObj = $.Deferred(),
-      treeDSLDeferObj = $.Deferred()
+    let treeUnitDataDeferObj = $.Deferred(), treeDataDeferObj = $.Deferred()
     // after loading treeunit data, original hierarchical data, and tree declarative language,
     // start compute the layout of tree visualizations
-    $.when(treeUnitDataDeferObj, treeDataDeferObj, treeDSLDeferObj).then(async() => {
+    $.when(treeUnitDataDeferObj, treeDataDeferObj).then(async() => {
         self.loading = false
         self.loadingData = false
         self.loadingView = false
-        const length = maxDslAmountIndex - self.dslNameIndex;
-        while (self.dslNameIndex < maxDslAmountIndex) {
-          let result = await self.setTreeDSLContent_Render_Download(self.dslNameIndex);
-          self.dslNameIndex = self.dslNameIndex + 1
-        }
-      })
+    })
     //  加载TreeUnit的数据
     let treeUnitDateset = 'treeunit.json'
     getHierarchicalData(treeUnitDateset).then(function(hierarchicalData) {
@@ -160,8 +154,7 @@ export default {
         treeUnitDataDeferObj.resolve()
     })
     let initUserName = 'root'
-    //  加载canvas的数据集
-    let initTreeDataName = 'weibo_reposting.json'
+    let initTreeDataName = 'flare-vis.json'
     this.initTreeDataName = initTreeDataName
     getHierarchicalData(initTreeDataName).then(function(hierarchicalData) {
         //  提取hierarchicalData中的数据属性
@@ -169,26 +162,6 @@ export default {
         sysDatasetObj.addTreeDataset(treeDataInfo)
         self.updateSelectedHierarchicalData(initTreeDataName)
         treeDataDeferObj.resolve()
-    })
-
-    let fileNameArray = []
-    for (let i = self.dslNameIndex; i < maxDslAmountIndex; i++) {
-      fileNameArray.push(i + '')
-    }
-    let filePath = 'space_align_minus3/'
-    getHierarchicalDSL(fileNameArray, filePath).then(function(treeDSLDataCollection) {
-      let treeTemplateArray = []
-      for (let item in treeDSLDataCollection) {
-        treeTemplateArray.push({
-          treename: item,
-          username: initUserName,
-          template: treeDSLDataCollection[item]
-        })
-      }
-      //  提取hierarchicalData中的数据属性
-      sysDatasetObj.addTreeTemplateArray(treeTemplateArray)
-      sysDatasetObj.initSelectedDSLObject(fileNameArray)
-      treeDSLDeferObj.resolve()
     })
   },
   mounted: function() {
@@ -214,101 +187,6 @@ export default {
       return 'icon-' + operation
     },
     onShow() {},
-    computeAllNodeTreeIndexWithDSL: function(nodeArrayWithValueObj, dslNameIndex) {
-      let treeIndexWithDSL = {}
-      for (let item in nodeArrayWithValueObj) {
-        treeIndexWithDSL[item] = dslNameIndex
-      }
-      return treeIndexWithDSL
-    },
-    setTreeDSLContent_Render_Download: function(dslNameIndex) {
-      let self = this
-      //  add new tree visualization layout into the position array
-      function appendTreeVisResults2PositionArray(treeLayout) {
-        self.positionArray.push(treeLayout)
-      }
-      return new Promise((res, rej) => {
-        let layoutParas = sysDatasetObj.getLayoutParas()
-        let nodeArrayWithValueObj = sysDatasetObj.getNodeArrayWithValueObj()
-        let treeIndexWithDSL = this.computeAllNodeTreeIndexWithDSL(nodeArrayWithValueObj, dslNameIndex)
-        layoutParas.treeIndexWithDSL = treeIndexWithDSL
-        layoutParas.treeDSLContentObj = this.getTreeDSLContentObj(treeIndexWithDSL)
-        this.computeAreaDataObj(layoutParas, appendTreeVisResults2PositionArray)
-      });
-    },
-    //  compute the tree visualization layout according to the layout params
-    computeAreaDataObj: function(layoutParas, appendTreeVisResults) {
-      let nodeArray = sysDatasetObj.getNodeArray()
-      let assignedAllNodesBoolean = assignedAllNodes(nodeArray, layoutParas.treeIndexWithDSL)
-      if (assignedAllNodesBoolean) {
-        getLayoutValue(layoutParas).then(function(treeLayout) {
-          let treeVisResults = computeTreeVisResults(treeLayout)
-          appendTreeVisResults(treeVisResults)
-        })
-      }
-      //  compute the tree visualization layout
-      function computeTreeVisResults (treelayout) {
-        let nodeArray = sysDatasetObj.getNodeArray()
-        let layoutParas = sysDatasetObj.getLayoutParas()
-        let treeIndexWithDSL = layoutParas.treeIndexWithDSL
-        let dslContentObject = layoutParas.treeDSLContentObj
-        let treeViewPosLenObj = {
-          x: 0, y: 0, width: 10, height: 10
-        }
-        let areaData = getTreeLayout(treeIndexWithDSL, dslContentObject, treelayout, nodeArray, treeViewPosLenObj)
-        let dslContentObjectWithDefault = addDefaultCoordElement(dslContentObject)
-        let [areaDataArray, linkDataArray] = getNodeLinkAttr(areaData, dslContentObjectWithDefault, treeIndexWithDSL, treeViewPosLenObj, nodeArray)
-        return areaDataArray
-      }
-      //  compute whether assign the dsl for all nodes in the hiearchical data
-      function assignedAllNodes(nodeArray, treeIndexWithDSL) {
-        let nodeIndexArray = []
-        for(let i = 0;i < nodeArray.length;i++) {
-          nodeIndexArray.push(nodeArray[i].data.index)
-        }
-        let dslIndexArray = []
-        for(let item in treeIndexWithDSL) {
-          dslIndexArray.push(item)
-        }
-        if ((nodeIndexArray.length === dslIndexArray.length) 
-            && (nodeIndexArray.length !== 0) && (dslIndexArray.length !== 0)) {
-          return true
-        }
-        return false
-      }
-    },
-    // compute the node distance among different tree visualizations
-    computeNodeDistance: function(length) {
-      let distanceArray = []
-      console.log(length)
-      for (let i = 0; i < length; i++) {
-        let temp = []
-        for (let j = 0; j < length; j++) {
-          if (j < i) temp.push(distanceArray[j][i])
-          if (j == i) temp.push(0)
-          if (j > i) {
-            temp.push(distance(this.positionArray[i], this.positionArray[j]))
-          }
-        }
-        distanceArray.push(temp)
-      }
-      return distanceArray
-      function distance(a, b) {
-        let len = a.length
-        let ans = 0
-        // let pow = Array(len)
-        // for (let i = 0; i < len;i++) {
-        //   if (a[i].fatherID == null) pow[i] = 1
-        //   else {
-        //     pow[i] = pow[parseFloat(a[i].fatherID.splice('-')[1])] + 1
-        //   }
-        // }
-        for (let i = 0; i < len;i++) {
-          ans += Math.sqrt(Math.pow((a[i].x - b[i].x),2) + Math.pow((a[i].y - b[i].y),2))
-        }
-        return ans
-      }
-    },
     handleClickDataIcon: function() {
       this.dataDialogVisible = true
       this.dataDialogKey = (this.dataDialogKey + 1) % 2
@@ -377,71 +255,6 @@ export default {
             }
           }
       } 
-    },
-    computeTreeIndexWithDSL: function() {
-      let templates = this.treeTemplateObj.templates
-      let nodeArrayWithValueObj = sysDatasetObj.getNodeArrayWithValueObj()
-      let treeIndexWithDSL = {}
-      for (let i = 0;i < templates.length;i++) {
-        let templateObj = templates[i]
-        let queryObject = templateObj.query
-        let nodeIdArray = this.getQueryNodeIdArray(queryObject, nodeArrayWithValueObj)
-        let recursiveMode = templateObj.recursive
-        let focusedTreeObjIdArray = this.getFocusedTreeObjIdArray(nodeIdArray, recursiveMode, nodeArrayWithValueObj)
-        let dslname = templateObj.dslname
-        for (let j = 0; j < focusedTreeObjIdArray.length; j++) {
-          treeIndexWithDSL[focusedTreeObjIdArray[j]] = dslname
-        }
-      }
-      return treeIndexWithDSL
-    },
-    //  将画布上的树可视化保存为png
-    save_as_png: function() {
-        let imageName = this.getDownloadFileName()
-        // WARNING: 如果TreeCanvas里的treeCanvasSvgId改了，这里也要改
-        let treeCanvasSvgId = 'tree-dsl-svg-canvas'
-        let treeCanvasId = 'tree-dsl-canvas'
-        let treeSvg = d3.select(document.getElementById(treeCanvasSvgId))
-        let treeCanvasG = treeSvg.select('#' + treeCanvasId)
-        // 暂时去除辅助线
-        treeCanvasG.selectAll('.mark-line').attr('display', 'none')
-        // 暂时去除最外围的方框，去除了好像不好看，注释掉了
-        // treeCanvasG.selectAll('.canvas-region-outer').attr('display', 'none')
-        // 暂时去除resize的circle
-        treeCanvasG.select('.tree-g').selectAll('.resize-circle-g').attr('display', 'none')
-        saveSvgAsPng.saveSvgAsPng(treeSvg.node(), imageName).then(function () {
-          treeCanvasG.selectAll('.mark-line').attr('display', null)
-          // treeCanvasG.selectAll('.canvas-region-outer').attr('display', null)
-          treeCanvasG.select('.tree-g').selectAll('.resize-circle-g').attr('display', null)
-        })
-    },
-    //  获取下载文件的名称
-    getDownloadFileName: function() {
-      let currentTreeDSLName = this.getCurrentDSLName()
-      let datasetName = this.selectedDataset.replace('.json', '')
-      return 'GoTree-' + datasetName + currentTreeDSLName
-    },
-    getCurrentDSLName: function() {
-      let currentTreeDSLArray = []
-      let layoutParas = sysDatasetObj.getLayoutParas()
-      let focusedTreeObjArray = this.focusedTreeObjArray
-      let treeIndexWithDSL = layoutParas.treeIndexWithDSL
-      for(let item in treeIndexWithDSL) {
-        //   确保是当前选中的节点
-        if (focusedTreeObjArray.indexOf(item) !== -1) {
-          let dslName = treeIndexWithDSL[item]
-          if (currentTreeDSLArray.indexOf(dslName) === -1) {
-                  currentTreeDSLArray.push(dslName)
-              }
-        }
-      }
-      let currentTreeDSLName = ''
-      // 更新当前选择的DSL数组
-      this.currentTreeDSLArray = currentTreeDSLArray
-      for (let i = 0; i < currentTreeDSLArray.length; i++) {
-        currentTreeDSLName = currentTreeDSLName + '-' + currentTreeDSLArray[i]
-      }
-      return currentTreeDSLName
     },
     initializeLSCG: async function(){
        await lscgSolver.initialize().then(() => {

@@ -37,6 +37,10 @@ export default {
   props: {
     treeCanvasKey: {
       type: Number
+    },
+    sendSVGData: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -230,8 +234,6 @@ export default {
         this.showHintMessage(this.treeNodeHintMessage, 'error')
         return 
       }
-      //  调整视图的位置
-      this.appendTreeVisBoundingBox()
       //  获取所有的linear对象的link参数
       this.renderTree()
       //  调整层次结构可视化形式的位置
@@ -267,19 +269,16 @@ export default {
       let treeViewPosLenObj = this.treeViewPosLenObj
       //  调整视图的位置
       d3.select('#' + currentRootGId)
-        // .transition()
-        // .duration(this.POSITION_DURATION)
         .attr('transform', 'translate(' + treeViewPosLenObj.x + ',' + treeViewPosLenObj.y + ')')
     }, 
     saveSvg: function() {
       let self = this
       var config = { filename: 'gotree-' + this.selectedTreeDSLIndex }
-      // $('#tree-dsl-svg-canvas-copy #index-0-g').remove();
-      $('#tree-dsl-svg-canvas #index-0-g').clone().appendTo($('#tree-dsl-svg-canvas-copy'));
+      let treevisElements = $('#tree-dsl-svg-canvas #index-0-g').clone()
+      treevisElements.appendTo($('#tree-dsl-svg-canvas-copy'));
       let svgInfo = d3_save_svg.getSVG(d3.select('#tree-dsl-svg-canvas-copy').node(), config);
       let formData = {'svg': svgInfo, 'name': this.selectedTreeDSLIndex}
       sendTreeVisSVG(formData)
-      // d3_save_svg.save(d3.select('#tree-dsl-svg-canvas-copy').node(), config);
     },
     /**
      * 确定视图的大小以及视图内部中矩形的大小
@@ -351,10 +350,6 @@ export default {
         height: this.treeViewHeight
       }
       this.treeViewPosLenObj = treeViewPosLenObj
-      //  在canvas上增加树可视化形式的boundingBox的背景矩形
-      self.appendTreeVisBoundingBox()
-      //  在画布上增加guideline
-      // this.renderGuideline(treeViewPosLenObj)
       //  在svg上增加绘制树可视化形式的g, 移动currentRootG的位置
       d3.select(this.$el).select('#' + this.treeCanvasId).select('#' + this.treeGId).remove();
       d3.select(this.$el)
@@ -363,52 +358,6 @@ export default {
         .attr('id', this.treeGId)
         .attr('class', this.singleTreeG)
         .attr('transform', 'translate(' + treeViewPosLenObj.x + ',' + treeViewPosLenObj.y + ')')
-    },
-    /**
-     * 增加整个树可视化形式背后的背景
-     */
-    appendTreeVisBoundingBox: function() {
-      let self = this
-      let currentRootGId = this.treeGId
-      //  获取修改数据之后的bounding box
-      let treeViewPosLenObj = this.treeViewPosLenObj
-      let paddingX = treeViewPosLenObj.width * 0
-      let paddingY = treeViewPosLenObj.height * 0
-      let currentRootBgId = currentRootGId.replace('-g', '') + '-bg'
-      if (d3.select('#' + this.treeCanvasId)
-              .select('#' + currentRootBgId)
-              .empty()) {
-          //  如果当前不存在背景的矩形，那么需要增加背景矩形
-          //  拖拽放大缩小
-          d3.select(this.$el)
-            .select('#' + this.treeCanvasId)
-            .append('rect')
-            .attr('id', currentRootBgId)
-            .attr('class', 'tree-vis-region-outer')
-            .attr('x', treeViewPosLenObj.x - paddingX)
-            .attr('y', treeViewPosLenObj.y - paddingY)
-            .attr('width', (treeViewPosLenObj.width + paddingX * 2))
-            .attr('height', (treeViewPosLenObj.height + paddingY * 2))
-            .on('click', function() {
-              // 删除当前选择的preview对象
-              self.removePreviewObjectSelection()
-              self.addControlHighlight()
-              //  更新当前选中的DSL数组
-              let currentTreeDSLArray = sysDatasetObj.getCurrentTreeDSLArray(self.focusedTreeObjArray)
-              self.UPDATE_CURRENT_TREE_DSL_ARRAY(currentTreeDSLArray)
-            })
-          self.appendResizeCircle(currentRootGId)
-        } else {
-          //  如果当前存在背景矩形，只需要修改大小即可
-          d3.select(this.$el)
-            .select('#' + this.treeCanvasId)
-            .select('#' + currentRootBgId)
-            .attr('x', treeViewPosLenObj.x - paddingX)
-            .attr('y', treeViewPosLenObj.y - paddingY)
-            .attr('width', (treeViewPosLenObj.width + paddingX * 2))
-            .attr('height', (treeViewPosLenObj.height + paddingY * 2))
-            self.repositionResizeCircle(currentRootGId)
-        }
     },
     /**
      * 点击背景矩形之后，取消对于控制数可视化形式大小的矩形的高亮
@@ -437,66 +386,6 @@ export default {
         .classed('highlight',true)
     },
     /**
-     * 绘制出现在视图上的guideline
-     */
-    renderGuideline: function(treeViewPosLenObj) {
-      var self = this
-      let treeViewPosLenObjX = treeViewPosLenObj.x
-      let treeViewPosLenObjY = treeViewPosLenObj.y
-      let treeViewPosLenObjWidth = treeViewPosLenObj.width
-      let treeViewPosLenObjHeight = treeViewPosLenObj.height
-      //  清空纵向直线
-      d3.select(this.$el)
-        .select('#' + this.treeCanvasId)
-        .selectAll('.horizontal-mark-line')
-        .remove()
-      //  增加纵向直线
-      d3.select(this.$el)
-        .select('#' + this.treeCanvasId)
-        .selectAll('.horizontal-mark-line')
-        .data(this.horizontalArray)
-        .enter()
-        .append('line')
-        .attr('class', 'horizontal-mark-line mark-line')
-        .attr('x1', function(d, i) {
-          return treeViewPosLenObjX + d * treeViewPosLenObjWidth
-        })
-        .attr('y1', function(d, i) {
-          return -10000
-        })
-        .attr('x2', function(d, i) {
-          return treeViewPosLenObjX + d * treeViewPosLenObjWidth
-        })
-        .attr('y2', function(d, i) {
-          return +10000
-        })
-      //  清空纵向直线
-      d3.select(this.$el)
-        .select('#' + this.treeCanvasId)
-        .selectAll('.vertical-mark-line')
-        .remove()
-      //  增加横向直线
-      d3.select(this.$el)
-        .select('#' + this.treeCanvasId)
-        .selectAll('.vertical-mark-line')
-        .data(this.verticalArray)
-        .enter()
-        .append('line')
-        .attr('class', 'vertical-mark-line mark-line')
-        .attr('x1', function(d, i) {
-          return -10000
-        })
-        .attr('y1', function(d, i) {
-          return treeViewPosLenObjY + d * treeViewPosLenObjHeight
-        })
-        .attr('x2', function(d, i) {
-          return +10000
-        })
-        .attr('y2', function(d, i) {
-          return treeViewPosLenObjY + d * treeViewPosLenObjHeight
-        })
-    },
-    /**
      * [clear the canvas of the GoTree rendering results]
      * @return {[Null]} [description]
      */
@@ -507,33 +396,6 @@ export default {
         .select('#' + currentRootGId)
         .selectAll('*')
         .remove()
-    },
-    //  渲染节点之间的连边
-    appendTreeLink: function(linkDataArray) {
-      let self = this
-      let currentRootGId = self.treeGId
-      //绘制link
-      let linkElements = d3.select(this.$el).select('#' + currentRootGId)
-        .selectAll('.link')
-        .data(linkDataArray.filter(function(d){
-          return ((typeof(d.pathAttr) !== 'undefined') && (d.pathAttr.indexOf('NaN') === -1))
-        }))
-      //  增加视觉元素
-      linkElements.enter()
-        .append('path')
-        .attr('id', function(d, i) {
-          return 'link' + d.beginid + 'to' + d.endid
-        })
-        .attr('class', function(d, i) {
-          return 'link' + ' link-parent-' + d.beginid + ' link-child-' + d.endid
-        })
-        .attr('d', function(d, i){
-          return d.pathAttr
-        })
-        .attr('stroke-width', function(d, i) {
-          return d.link_width
-        })
-        .attr('fill', 'none')
     },
     //  渲染节点之间的link
     renderTreeLink: function (linkDataArray) {
@@ -564,149 +426,8 @@ export default {
         })
         .attr('fill', 'none')
         .attr('stroke', '#606060')
-      //  对于节点采用动画变换的方式进行过渡
-      // let fromLinkArray = []
-      // let toLinkArray = []
-      // let linkPathArray = []
-      // //  对于节点之间的连线通过动画的方式进行过渡
-      // linkElements.each(function(d, i) {
-      //   let currentPath = d3.select(this).attr("d")
-      //   if ((currentPath != null) && (typeof(currentPath) !== 'undefined')) {
-      //     fromLinkArray.push(currentPath)
-      //   }
-      //   let targetPath = d.pathAttr
-      //   if ((targetPath != null) && (typeof(targetPath) !== 'undefined')) {
-      //     toLinkArray.push(targetPath)              
-      //   }
-      //   linkPathArray.push(d3.select(this).node())
-      //   //  除path形状之外的其他的style的动画过渡
-      //   d3.select(this)
-      //     .transition()
-      //     .duration(self.DURATION)
-      //     .attr('stroke-width', function (d, i) {
-      //       return d.link_width
-      //     })
-      //     .attr('fill','none')
-      // })
-      // linkElements.exit().remove()
-      //  节点之间连线的路径进行变形的动画
-      // let tweenLinkPathsCallback = function () {
-      //   linkElements.each(function(d, i) {
-      //     d3.select(this)
-      //       .attr('d', d.pathAttr)
-      //       .attr('stroke-width', function (d, i) {
-      //         return d.link_width
-      //       })
-      //   })
-      //   // 全部变化完成之后，删除全部的linearnode节点，重新绘制，保证节点是在最上方的 
-      //   if (self.linkDisplayTop) { 
-      //     //  when display the tree nodes on the top
-      //     setTimeout(function() {
-      //       d3.select('#' + currentRootGId).selectAll('.link') .remove()
-      //       // 先删除节点，然后增加节点
-      //       self.appendTreeLink(linkDataArray)
-      //     }, 200) 
-      //   } 
-      // }
-      //  判断fromLinkArray与toLinkArray中的对象是否是null
-      // if ((fromLinkArray.length > 0) && (toLinkArray.length > 0)) {
-      //     if ((fromLinkArray.length === toLinkArray.length) && (fromLinkArray[0] != null) && (toLinkArray[0] != null) && 
-      //         (typeof(fromLinkArray[0]) !== 'undefined') && (typeof(toLinkArray[0]) !== 'undefined')) {
-      //     //  只有fromLinkArray与toLinkArray中的对象都不为null时，才会进行transition的动画
-      //     tweenPaths({duration: self.DURATION, complete: tweenLinkPathsCallback, from: fromLinkArray, to: toLinkArray, next: (d, i) => linkPathArray[ i ].setAttribute('d', d)})
-      //   } 
-      // } else {
-      //   tweenLinkPathsCallback()
-      // }
-    },
-    //  重新增加
-    appendTreeNode: function(areaDataArray) {
-      let self = this
-      let nodeArray = self.nodeArray
-      let currentRootGId = self.treeGId
-      let treelayout = this.layouts
-      //  表示节点的视觉元素
-      let treeNodeElementG = d3.select(this.$el)
-        .select('#' + currentRootGId)
-        .selectAll('.lineartree-node-g')
-        .data(areaDataArray, function(d, i) {
-          return d.id
-        })
-      //  创建视觉元素
-      treeNodeElementG.enter()
-        .append('g')
-        .attr('class', 'lineartree-node-g')
-        .attr('id',function(d,i) {
-          return 'nodeg'+d.id
-        })
-        .append('path')
-        .attr('class', 'lineartree-node')
-        .attr('id',function(d,i) {
-          return 'rootnode'+d.id
-        })
-        .attr('d', function(d, i) {
-          return d.element
-        })
-        .on("mousemove",this.mousemove)
-        .on("mouseover",this.mouseover)
-        .on("mouseout",this.mouseout)
-        .on("click", function(d, i) {
-          let dataObj = JSON.parse(JSON.stringify(d.data))
-          dataObj.fatherID = d.fatherID
-          self.onclick(dataObj)
-        })
-        .attr('fill', function(d) {
-          return d.node_color
-        })
-        .style('stroke-width', function(d) {
-          return d.stroke_width
-        })
-        .style("opacity",1)
-      //  增加节点的label
-      d3.select(this.$el).select('#' + currentRootGId)
-        .selectAll('.lineartree-node-g')
-        .each(function(d, i) {
-          //  只有当TreeNodeElementG中不存在node-label, 才会在G中增加文本，否则会造成重复
-          if ((d3.select(this).select('.node-label').empty()) && (d.fontSize !== 0) && (d.labelValue !== "")) {
-            d3.select(this)
-              .append("defs")
-              .append("path")
-              .attr('class', 'label-curve')
-              .attr("id", function(d) {
-                return "curve-" + d.id
-              })
-              .attr("d", function(d) {
-                return d.labelPath
-              });
-            d3.select(this)
-              .append("text")
-              .attr('class','node-label')
-              .attr("id", function(d) {
-                return "node-label-" + d.id 
-              })
-              .append("textPath")
-              .attr("xlink:href", function(d, i) {
-                return "#curve-" + d.id
-              })
-              .text(function(d, i) {
-                return d.labelValue
-              })
-              .style('text-anchor', function(d) {
-                return d.textAnchor
-              })
-              .attr('transform', function(d) {
-                return 'translate(' + 0 + ',' + 0 + ')rotate(' + d.rotation +')' 
-              })
-              .style('font-size', function(d) {
-                return d.fontSize
-              })
-              .attr('alignment-baseline', 'middle')
-              .attr('startOffset', function(d, i) {
-                return d.labelPathPos + '%'
-              })
-          }
-        })
-    },
+      linkElements.exit().remove()
+     },
     renderTreeNode: function(areaDataArray) {
       let self = this
       let nodeArray = self.nodeArray
@@ -760,135 +481,7 @@ export default {
           return d.stroke_width
         })
         .style("opacity",1)
-      // //  增加节点的label
-      // treeNodeElementG.each(function(d, i) {
-      //   //  只有当TreeNodeElementG中不存在node-label, 才会在G中增加文本，否则会造成重复
-      //   if ((d3.select(this).select('.node-label').empty()) && (d.fontSize !== 0) && (d.labelValue !== "")) {
-      //     d3.select(this)
-      //       .append("defs")
-      //       .append("path")
-      //       .attr('class', 'label-curve')
-      //       .attr("id", function(d) {
-      //         return "curve-" + d.id
-      //       })
-      //       .attr("d", function(d) {
-      //         return d.labelPath
-      //       });
-      //     d3.select(this)
-      //       .append("text")
-      //       .attr('class','node-label')
-      //       .attr("id", function(d) {
-      //         return "node-label-" + d.id 
-      //       })
-      //       .append("textPath")
-      //       .attr("xlink:href", function(d, i) {
-      //         return "#curve-" + d.id
-      //       })
-      //       .text(function(d, i) {
-      //         return d.labelValue
-      //       })
-      //       .style('text-anchor', function(d) {
-      //         return d.textAnchor
-      //       })
-      //       .attr('transform', function(d) {
-      //         return 'translate(' + 0 + ',' + 0 + ')rotate(' + d.rotation +')' 
-      //       })
-      //       .style('font-size', function(d) {
-      //         return d.fontSize
-      //       })
-      //       .attr('alignment-baseline', 'middle')
-      //       .attr('startOffset', function(d, i) {
-      //         return d.labelPathPos + '%'
-      //       })
-      //   }
-      // })
-      //  更新每一个treeNodeElementG里面的path
-      // let fromArray = []
-      // let toArray = []
-      // let pathArray = []
-      // treeNodeElementG.each(function(d, i) {
-      //     let targetAnimationPath = d.element
-      //     if (!d3.select(this).select('.lineartree-node').empty()) {
-      //       let currentAnimationPath = d3.select(this).select('.lineartree-node').attr("d")
-      //       fromArray.push(currentAnimationPath)
-      //     }
-      //     pathArray.push(d3.select(this).select('.lineartree-node').node())
-      //     toArray.push(targetAnimationPath)
-      //     //  除path之外的其他的style的动画过渡
-      //     d3.select(this)
-      //       .select('.lineartree-node')
-      //       // .transition()
-      //       // .duration(self.DURATION)
-      //       .attr('fill', function (d) {
-      //         return d.node_color
-      //       })
-      //       .style('stroke-width', function(d) {
-      //         return d.stroke_width
-      //       })
-      //       .style("opacity",1)
-      //     d3.select(this)
-      //       // .transition()
-      //       // .duration(self.DURATION)
-      //       .select('.label-curve')
-      //       .attr("d", function(d) {
-      //         return d.labelPath
-      //       });
-      //     //  更新节点的标签
-      //     d3.select(this)
-      //       .select('.node-label')
-      //       .select('textPath')
-      //       // .transition()
-      //       // .duration(self.DURATION)
-      //       .attr("xlink:href", function(d, i) {
-      //         return "#curve-" + d.id
-      //       })
-      //       .style('text-anchor', function(d) {
-      //         return d.textAnchor
-      //       })
-      //       .style('font-size', function(d) {
-      //         return d.fontSize
-      //       })
-      //       .text(function(d, i) {
-      //         return d.labelValue
-      //       })
-      //       .attr('transform', function(d) {
-      //         return 'translate(' + 0 + ',' + 0 + ')rotate(' + d.rotation +')' 
-      //       })
-      //       .attr('alignment-baseline', 'middle')
-      //       .attr('startOffset', function(d, i) {
-      //         return d.labelPathPos + '%'
-      //       })
-      // })
-      // //  transition之后结束的方法
-      // let tweenPathsCallback = function () {
-      //   treeNodeElementG.each(function(d, i) {
-      //       let targetPath = d.element
-      //       d3.select(this)
-      //         .select('.lineartree-node')
-      //         .attr('d', targetPath)
-      //   })
-      //   // 全部变化完成之后，删除全部的linearnode节点，重新绘制，保证节点是在最上方的 
-      //   if (!self.linkDisplayTop) { //  when display the tree nodes on the top
-      //     setTimeout(function() {
-      //       d3.select('#' + currentRootGId).selectAll('.lineartree-node-g') .remove()
-      //       // 先删除节点，然后增加节点
-      //       self.appendTreeNode(areaDataArray)
-      //       if ((typeof(self.previewTreeObj) !== 'undefined') && (self.previewTreeObj != null)) {
-      //         self.highlightFocusedTreeObjIdArray(self.previewTreeObj)              
-      //       }
-      //     }, 200) 
-      //   }       
-      // }
-      // if ((fromArray.length > 0) && (toArray.length > 0)) {
-      //   if ((fromArray.length === toArray.length) && (fromArray[0] != null) && (toArray[0] != null) && 
-      //         (typeof(fromArray[0]) !== 'undefined') && (typeof(toArray[0]) !== 'undefined')) {
-      //     tweenPaths({duration: self.DURATION, complete: tweenPathsCallback, from: fromArray, to: toArray, next: (d, i) => pathArray[ i ].setAttribute('d', d)})
-      //   }
-      // } else {
-      //   tweenPathsCallback()
-      // }
-      //  删除多余的视觉元素
-      // treeNodeElementG.exit().remove()
+      treeNodeElementG.exit().remove()
     },
     mousemove: function(d) {
       let treeViewPosLenObj = this.treeViewPosLenObj
@@ -946,16 +539,6 @@ export default {
         }
       }
       return selectedTreeUnitRootIdArray   
-      // if (viewSelectionMode === 'SingleNode') {
-      //   let singleNodeArray = [ selectId ]
-      //   return singleNodeArray     
-      // } else if (viewSelectionMode === 'Sibling') {
-      //   let siblingNodeArray = getSiblingNodeArray(selectId)
-      //   return siblingNodeArray
-      // } else if (viewSelectionMode === 'SameDepth') {
-      //   let sameDepthNodeArray = getSameDepthNodeArray(selectId)
-      //   return sameDepthNodeArray
-      // }  
       //  获取兄弟节点
       function getSiblingNodeArray(selectId) {
         var nodeArray = []
@@ -1114,25 +697,6 @@ export default {
         let AreaData = this.AreaData
         let nodeArray = this.nodeArray
         let currentRootID = this.currentRootID
-        //  遍历得到全部nodeId的数组
-        // let nodeIdArray = []
-        // //  treeLayoutArray是存储所有的节点属性值的数组，将对象转换为数组
-        // let treeLayoutArray = []
-        // //  treelayout是一个存储树中所有节点属性值的对象
-        // for (let nodeId in treelayout) {
-        //   nodeIdArray.push(nodeId)
-        //   treeLayoutArray.push(treelayout[nodeId])
-        // }
-        // let typecolorArray = self.typecolorArray
-        // let ordinalColor = d3.scaleOrdinal().range(typecolorArray)
-        // //  结点颜色数组，typecolorArray为adaptive类型；valuecolorArray为depth类型
-        // let valuecolorArray = self.valuecolorArray
-        // //将nodeIdArray按照从小到大排序，以得到根节点id
-        // nodeIdArray = nodeIdArray.sort(function(a, b) {
-        //   var aNum = a.replace('index-', '')
-        //   var bNum = b.replace('index-', '')
-        //   return aNum - bNum
-        // })
         let dslContentObjectWithDefault = addDefaultCoordElement(dslContentObject)
         //  根据节点的id得到节点所对应的g
         let [areaDataArray, linkDataArray] = getNodeLinkAttr(AreaData, dslContentObjectWithDefault, treeIndexWithDSL, treeViewPosLenObj, nodeArray)
@@ -1154,7 +718,9 @@ export default {
           self.renderTreeNode(areaDataArray)      
         }
         // TODO save the tree visualization results in svg format 
-        self.saveSvg()
+        if (self.sendSVGData) {
+          self.saveSvg()
+        }
     },
     //  提取传递的treeDsl的文件
     extractDSLContentObject: function () {
@@ -1297,14 +863,6 @@ export default {
           Math.min(pt.y, MAX_TRANSLATE_Y),
           MIN_TRANSLATE_Y
         );
-        // let dragX = Math.max(
-        //   Math.min(pt.x, MAX_TRANSLATE_X),
-        //   MIN_TRANSLATE_X
-        // );
-        // let dragY = Math.max(
-        //   Math.min(pt.y, MAX_TRANSLATE_Y),
-        //   MIN_TRANSLATE_Y
-        // );
         let rect = d3.select('#'+self.treeCanvasId)
           .select('.tree-vis-region-outer')
         let x = +rect.attr('x')
@@ -1483,7 +1041,6 @@ export default {
       height: 100%;
       width: 100%;
       // background: #f2f2f2;
-      touch-action: pinch-zoom;
     }
   }
   .container.highlight {
